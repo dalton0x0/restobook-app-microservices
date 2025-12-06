@@ -7,6 +7,7 @@ import com.restobook.authservice.repositories.RoleRepository;
 import com.restobook.authservice.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NullMarked;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -23,12 +24,11 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     @Transactional
+    @NullMarked
     public void run(String... args) {
         log.info("Initialisation des données de base...");
-
         initializeRoles();
         initializeAdminUser();
-
         log.info("Initialisation des données terminée.");
     }
 
@@ -49,7 +49,7 @@ public class DataInitializer implements CommandLineRunner {
                         .description(getDescription(roleName))
                         .build();
                 roleRepository.save(role);
-                log.info("Rôle créé: {}", roleName);
+                log.debug("Rôle créé: {}", roleName);
             } else {
                 log.debug("Rôle déjà existant: {}", roleName);
             }
@@ -77,7 +77,7 @@ public class DataInitializer implements CommandLineRunner {
                     .build();
 
             userRepository.save(adminUser);
-            log.info("Utilisateur admin créé: {} / Mot de passe {}: ", adminEmail, adminPassword);
+            log.debug("Utilisateur admin créé: {} / Mot de passe {}: ", adminEmail, adminPassword);
         } else {
             log.debug("Utilisateur admin déjà existant: {}", adminEmail);
         }

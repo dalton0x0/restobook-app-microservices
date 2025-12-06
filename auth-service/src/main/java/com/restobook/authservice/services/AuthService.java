@@ -1,6 +1,11 @@
 package com.restobook.authservice.services;
 
-import com.restobook.authservice.dtos.*;
+import com.restobook.authservice.dtos.request.LoginRequest;
+import com.restobook.authservice.dtos.request.RefreshTokenRequest;
+import com.restobook.authservice.dtos.request.RegisterRequest;
+import com.restobook.authservice.dtos.response.AuthResponse;
+import com.restobook.authservice.dtos.response.TokenValidationResponse;
+import com.restobook.authservice.dtos.response.UserResponse;
 
 public interface AuthService {
 

@@ -1,10 +1,20 @@
 package com.restobook.authservice.services;
 
-import com.restobook.authservice.dtos.*;
+import com.restobook.authservice.dtos.request.ChangePasswordRequest;
+import com.restobook.authservice.dtos.request.CreateUserRequest;
+import com.restobook.authservice.dtos.request.UpdateRoleRequest;
+import com.restobook.authservice.dtos.request.UpdateUserRequest;
+import com.restobook.authservice.dtos.response.PageResponse;
+import com.restobook.authservice.dtos.response.UserResponse;
 import com.restobook.authservice.enums.RoleName;
 import org.springframework.data.domain.Pageable;
 
 public interface UserService {
+
+    /**
+     * Liste tous les utilisateurs avec pagination
+     */
+    PageResponse<UserResponse> getAllUsers(Pageable pageable);
 
     /**
      * Récupère un utilisateur par son ID
@@ -17,34 +27,14 @@ public interface UserService {
     UserResponse getUserByEmail(String email);
 
     /**
-     * Récupère le profil de l'utilisateur connecté
+     * Liste les utilisateurs par rôle
      */
-    UserResponse getCurrentUser(Long userId);
-
-    /**
-     * Met à jour le profil de l'utilisateur connecté
-     */
-    UserResponse updateCurrentUser(Long userId, UpdateUserRequest request);
-
-    /**
-     * Change le mot de passe de l'utilisateur connecté
-     */
-    void changePassword(Long userId, ChangePasswordRequest request);
-
-    /**
-     * Liste tous les utilisateurs avec pagination
-     */
-    PageResponse<UserResponse> getAllUsers(Pageable pageable);
+    PageResponse<UserResponse> getUsersByRole(RoleName roleName, Pageable pageable);
 
     /**
      * Recherche des utilisateurs par mot-clé
      */
     PageResponse<UserResponse> searchUsers(String keyword, Pageable pageable);
-
-    /**
-     * Liste les utilisateurs par rôle
-     */
-    PageResponse<UserResponse> getUsersByRole(RoleName roleName, Pageable pageable);
 
     /**
      * Création d'un utilisateur par un admin (avec choix du rôle)
@@ -75,6 +65,21 @@ public interface UserService {
      * Supprime un utilisateur
      */
     void deleteUser(Long id);
+
+    /**
+     * Récupère le profil de l'utilisateur connecté
+     */
+    UserResponse getCurrentUser(Long userId);
+
+    /**
+     * Met à jour le profil de l'utilisateur connecté
+     */
+    UserResponse updateCurrentUser(Long userId, UpdateUserRequest request);
+
+    /**
+     * Change le mot de passe de l'utilisateur connecté
+     */
+    void changePassword(Long userId, ChangePasswordRequest request);
 
     /**
      * Vérifie si un email existe

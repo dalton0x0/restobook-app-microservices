@@ -21,10 +21,10 @@ public class OpenApiConfig {
         return new OpenAPI()
                 .info(new Info()
                         .title("Restaurant Service API")
-                        .description("API de gestion des restaurants pour RestoBook QuickEat")
+                        .description("Service API de gestion des restaurants pour RestoBook QuickEat")
                         .version("1.0.0")
                         .contact(new Contact()
-                                .name("QuickEat")
+                                .name("QuickEat Development Team")
                                 .email("dev@example.fr")
                                 .url("https://www.cheridanh.cg/"))
                         .license(new License()
@@ -38,6 +38,6 @@ public class OpenApiConfig {
                                         .type(SecurityScheme.Type.HTTP)
                                         .scheme("bearer")
                                         .bearerFormat("JWT")
-                                        .description("Token JWT obtenu via le auth service")));
+                                        .description("Entrez votre token JWT obtenu via le auth service")));
     }
 }

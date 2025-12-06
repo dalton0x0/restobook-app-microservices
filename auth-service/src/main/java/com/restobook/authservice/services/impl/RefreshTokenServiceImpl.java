@@ -47,19 +47,19 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
         log.debug("Validation du refresh token");
 
         if (token == null || token.isBlank()) {
-            log.warn("Token null ou vide");
+            log.debug("Token null ou vide");
             throw new InvalidTokenException("Refresh token requis");
         }
 
         RefreshToken refreshToken = refreshTokenRepository.findByToken(token)
                 .orElseThrow(() -> {
-                    log.warn("Refresh token non trouvé dans la base de données");
+                    log.debug("Refresh token non trouvé dans la base de données");
                     return new InvalidTokenException("Refresh token invalide");
                 });
 
         // Vérifier si le token est encore valide
         if (!refreshToken.isValid()) {
-            log.warn("Refresh token invalide (révoqué et expiré) pour l'utilisateur: {}", refreshToken.getUser().getEmail());
+            log.debug("Refresh token invalide (révoqué et expiré) pour l'utilisateur: {}", refreshToken.getUser().getEmail());
             throw new InvalidTokenException();
         }
 
@@ -72,11 +72,12 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
 
         // Vérifier si le token est expiré
         if (refreshToken.isExpired()) {
-            log.warn("Refresh token expiré pour l'utilisateur: {}", refreshToken.getUser().getEmail());
+            log.debug("Refresh token expiré pour l'utilisateur: {}", refreshToken.getUser().getEmail());
             throw new InvalidTokenException("Refresh token expiré. Veuillez vous reconnecter.");
         }
 
         log.debug("Refresh token valide pour: {}", refreshToken.getUser().getEmail());
+
         return refreshToken;
     }
 
@@ -86,27 +87,26 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
         log.debug("Révocation du refresh token");
 
         if (token == null || token.isBlank()) {
-            log.warn("Tentative de révocation avec un token null ou vide");
+            log.debug("Tentative de révocation avec un token null ou vide");
             throw new InvalidTokenException("Refresh token requis");
         }
 
         RefreshToken refreshToken = refreshTokenRepository.findByToken(token)
                 .orElseThrow(() -> {
-                    log.warn("Tentative de révocation d'un token inexistant");
+                    log.debug("Tentative de révocation d'un token inexistant");
                     return new InvalidTokenException("Refresh token non trouvé");
                 });
 
         // Vérifier si déjà révoqué
         if (refreshToken.getRevoked()) {
-            log.info("Token déjà révoqué, aucune action nécessaire");
+            log.debug("Token déjà révoqué, aucune action nécessaire");
             return;
         }
 
         refreshToken.setRevoked(true);
         refreshToken.setExpiryDate(Instant.now());
         refreshTokenRepository.save(refreshToken);
-
-        log.info("Refresh token révoqué avec succès pour l'utilisateur: {}",
+        log.debug("Refresh token révoqué avec succès pour l'utilisateur: {}",
                 refreshToken.getUser().getEmail());
     }
 
@@ -115,7 +115,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     public void revokeAllUserTokens(Long userId) {
         log.info("Révocation de tous les tokens pour l'utilisateur ID: {}", userId);
         refreshTokenRepository.revokeAllByUserId(userId);
-        log.info("Tous les tokens ont été révoqués pour l'utilisateur ID: {}", userId);
+        log.info("Tous les tokens révoqués pour l'utilisateur ID: {}", userId);
     }
 
     @Override
@@ -125,6 +125,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
         log.info("Nettoyage des tokens expirés");
         int deletedCount = refreshTokenRepository.deleteExpiredTokens(Instant.now());
         log.info("{} tokens expirés supprimés", deletedCount);
+
         return deletedCount;
     }
 }

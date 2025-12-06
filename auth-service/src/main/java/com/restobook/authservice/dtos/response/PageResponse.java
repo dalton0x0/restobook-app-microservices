@@ -1,4 +1,4 @@
-package com.restobook.authservice.dtos;
+package com.restobook.authservice.dtos.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;

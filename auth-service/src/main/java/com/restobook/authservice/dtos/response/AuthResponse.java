@@ -1,4 +1,4 @@
-package com.restobook.authservice.dtos;
+package com.restobook.authservice.dtos.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
@@ -18,7 +18,7 @@ public class AuthResponse {
 
     public static AuthResponse of(String accessToken, String refreshToken, Long expiresIn, UserResponse user) {
         return AuthResponse.builder()
-                .accessToken(accessToken)
+                .accessToken("Bearer " + accessToken)
                 .refreshToken(refreshToken)
                 .tokenType("Bearer")
                 .expiresIn(expiresIn)

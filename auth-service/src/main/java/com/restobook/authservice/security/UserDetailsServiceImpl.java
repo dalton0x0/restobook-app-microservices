@@ -4,6 +4,7 @@ import com.restobook.authservice.entities.User;
 import com.restobook.authservice.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NullMarked;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -19,6 +20,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
     @Override
     @Transactional(readOnly = true)
+    @NullMarked
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         log.debug("Chargement de l'utilisateur par email: {}", email);
 

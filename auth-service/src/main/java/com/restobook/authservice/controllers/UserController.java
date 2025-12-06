@@ -1,9 +1,9 @@
 package com.restobook.authservice.controllers;
 
-import com.restobook.authservice.dtos.ApiResponse;
-import com.restobook.authservice.dtos.ChangePasswordRequest;
-import com.restobook.authservice.dtos.UpdateUserRequest;
-import com.restobook.authservice.dtos.UserResponse;
+import com.restobook.authservice.dtos.response.ApiResponse;
+import com.restobook.authservice.dtos.request.ChangePasswordRequest;
+import com.restobook.authservice.dtos.request.UpdateUserRequest;
+import com.restobook.authservice.dtos.response.UserResponse;
 import com.restobook.authservice.security.UserDetailsImpl;
 import com.restobook.authservice.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -27,13 +27,9 @@ public class UserController {
 
     @GetMapping("/me")
     @Operation(summary = "Mon profil", description = "Récupère le profil de l'utilisateur connecté")
-    public ResponseEntity<@NonNull ApiResponse<UserResponse>> getCurrentUser(
-            @AuthenticationPrincipal UserDetailsImpl userDetails) {
-
-        log.info("Récupération du profil pour: {}", userDetails.getEmail());
-
+    public ResponseEntity<@NonNull ApiResponse<UserResponse>> getCurrentUser(@AuthenticationPrincipal UserDetailsImpl userDetails) {
+        log.debug("Requête HTTP GET /users/me - Utilisateur: {}", userDetails.getEmail());
         UserResponse userResponse = userService.getCurrentUser(userDetails.getId());
-
         return ResponseEntity.ok(ApiResponse.success(userResponse));
     }
 
@@ -43,11 +39,8 @@ public class UserController {
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             @Valid @RequestBody UpdateUserRequest request) {
 
-        log.info("Mise à jour du profil pour: {}", userDetails.getEmail());
-
+        log.debug("Requête HTTP PUT /users/me - Utilisateur: {}", userDetails.getEmail());
         UserResponse userResponse = userService.updateCurrentUser(userDetails.getId(), request);
-
-        log.info("Profil mis à jour avec succès pour: {}", userDetails.getEmail());
         return ResponseEntity.ok(ApiResponse.success("Profil mis à jour avec succès", userResponse));
     }
 
@@ -57,11 +50,8 @@ public class UserController {
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             @Valid @RequestBody ChangePasswordRequest request) {
 
-        log.info("Changement de mot de passe pour: {}", userDetails.getEmail());
-
+        log.debug("Requête HTTP PUT /users/me/password - Utilisateur: {}", userDetails.getEmail());
         userService.changePassword(userDetails.getId(), request);
-
-        log.info("Mot de passe changé avec succès pour: {}", userDetails.getEmail());
         return ResponseEntity.ok(ApiResponse.success("Mot de passe changé avec succès. Veuillez vous reconnecter."));
     }
 }

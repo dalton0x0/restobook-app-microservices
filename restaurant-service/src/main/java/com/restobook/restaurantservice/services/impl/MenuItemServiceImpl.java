@@ -29,7 +29,7 @@ public class MenuItemServiceImpl implements MenuItemService {
     @Override
     @Transactional
     public MenuItemResponse createMenuItem(Long restaurantId, CreateMenuItemRequest request, Long userId, String role) {
-        log.info("Création d'un plat pour restaurant: {}", restaurantId);
+        log.info("Création d'un plat pour le restaurant ID: {}", restaurantId);
 
         Restaurant restaurant = restaurantRepository.findById(restaurantId).orElseThrow(
                 () -> new ResourceNotFoundException("Restaurant", "id", restaurantId)
@@ -53,8 +53,8 @@ public class MenuItemServiceImpl implements MenuItemService {
                 .category(request.getCategory())
                 .build();
 
-        MenuItem savedMenuItem =  menuItemRepository.save(menuItem);
-        log.info("Plat créé: {}", savedMenuItem.getName());
+        MenuItem savedMenuItem = menuItemRepository.save(menuItem);
+        log.info("Plat créé: {} (ID: {})", savedMenuItem.getName(), savedMenuItem.getId());
 
         return MenuItemResponse.fromEntity(savedMenuItem);
     }
@@ -62,19 +62,20 @@ public class MenuItemServiceImpl implements MenuItemService {
     @Override
     @Transactional(readOnly = true)
     public MenuItemResponse getMenuItemById(Long id) {
-        log.info("Récupération d'un plat par id: {}", id);
+        log.debug("Récupération du plat ID: {}", id);
 
         MenuItem menuItem = menuItemRepository.findById(id).orElseThrow(
                 () -> new ResourceNotFoundException("Plat", "id", id)
         );
-        log.info("Plat récupéré {}", menuItem.getName());
+        log.debug("Plat trouvé: {}", menuItem.getName());
+
         return MenuItemResponse.fromEntity(menuItem);
     }
 
     @Override
     @Transactional
     public MenuItemResponse updateMenuItem(Long id, UpdateMenuItemRequest request, Long userId, String role) {
-        log.info("Modification d'un plat: {} par l'utilisateur: {}", id, userId);
+        log.info("Mise à jour du plat ID: {} par l'utilisateur ID: {}", id, userId);
 
         MenuItem menuItem = menuItemRepository.findById(id).orElseThrow(
                 () -> new ResourceNotFoundException("Plat", "id", id)
@@ -96,7 +97,7 @@ public class MenuItemServiceImpl implements MenuItemService {
         if (request.getCategory() != null) menuItem.setCategory(request.getCategory());
 
         MenuItem updatedMenuItem = menuItemRepository.save(menuItem);
-        log.info("Plat mis à jour: {}", updatedMenuItem.getName());
+        log.info("Plat mis à jour: {} (ID: {})", updatedMenuItem.getName(), id);
 
         return MenuItemResponse.fromEntity(updatedMenuItem);
     }
@@ -104,23 +105,22 @@ public class MenuItemServiceImpl implements MenuItemService {
     @Override
     @Transactional
     public void deleteMenuItem(Long id, Long userId, String role) {
-        log.info("Suppression du plat: {} par l'utilisateur: {}", id, userId);
+        log.info("Suppression du plat ID: {} par l'utilisateur ID: {}", id, userId);
 
         MenuItem menuItem = menuItemRepository.findById(id).orElseThrow(
                 () -> new ResourceNotFoundException("Plat", "id", id)
         );
 
         checkPermission(menuItem.getRestaurant(), userId, role);
-
         menuItemRepository.deleteById(id);
-        log.info("Plat supprimé: {}", menuItem.getName());
+        log.info("Plat supprimé: {} (ID: {})", menuItem.getName(), id);
     }
 
     @Override
     public List<MenuItemResponse> getMenuItemsByRestaurant(Long restaurantId) {
-        log.info("Récupération de tous les plats pour le restaurant: {}", restaurantId);
+        log.debug("Récupération de tous les plats du restaurant ID: {}", restaurantId);
 
-        if (restaurantRepository.existsById(restaurantId)) {
+        if (!restaurantRepository.existsById(restaurantId)) {
             throw new ResourceNotFoundException("Restaurant", "id", restaurantId);
         }
 
@@ -129,14 +129,15 @@ public class MenuItemServiceImpl implements MenuItemService {
                 .map(MenuItemResponse::fromEntity)
                 .toList();
 
-        log.info("Total des plats récupérés: {} pour le restaurant: {}", menuItems.size(),  restaurantId);
+        log.debug("{} plats trouvés pour le restaurant ID: {}", menuItems.size(), restaurantId);
+
         return menuItems;
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<MenuItemResponse> getMenuItemsByCategory(Long restaurantId, MenuCategory category) {
-        log.info("Récupération  des plats pour le restaurant: {}, pour la catégorie: {}", restaurantId,  category);
+        log.debug("Récupération des plats du restaurant ID: {} pour la catégorie: {}", restaurantId, category);
         return menuItemRepository.findByRestaurantIdAndCategoryOrderByDisplayOrderAscNameAsc(restaurantId, category)
                 .stream()
                 .map(MenuItemResponse::fromEntity)
@@ -146,7 +147,7 @@ public class MenuItemServiceImpl implements MenuItemService {
     @Override
     @Transactional(readOnly = true)
     public List<MenuItemResponse> getAvailableMenuItems(Long restaurantId) {
-        log.info("Récupération des plats disponibles pour le restaurant: {}", restaurantId);
+        log.debug("Récupération des plats disponibles du restaurant ID: {}", restaurantId);
         return menuItemRepository.findByRestaurantIdAndAvailableTrueOrderByDisplayOrderAscNameAsc(restaurantId)
                 .stream()
                 .map(MenuItemResponse::fromEntity)
@@ -156,7 +157,7 @@ public class MenuItemServiceImpl implements MenuItemService {
     @Override
     @Transactional(readOnly = true)
     public List<MenuItemResponse> searchMenuItems(Long restaurantId, String keyword) {
-        log.info("Recherche du plat: {} pour le restaurant: {}", keyword, restaurantId);
+        log.debug("Recherche du plat '{}' pour le restaurant ID: {}", keyword, restaurantId);
         return menuItemRepository.searchByName(restaurantId, keyword)
                 .stream()
                 .map(MenuItemResponse::fromEntity)
@@ -166,7 +167,7 @@ public class MenuItemServiceImpl implements MenuItemService {
     @Override
     @Transactional(readOnly = true)
     public List<MenuItemResponse> getVegetarianItems(Long restaurantId) {
-        log.info("Recherche de tous les plats végétarien pour le restaurant: {}", restaurantId);
+        log.debug("Recherche des plats végétariens du restaurant ID: {}", restaurantId);
         return menuItemRepository.findByRestaurantIdAndVegetarianTrueAndAvailableTrueOrderByDisplayOrderAsc(restaurantId)
                 .stream()
                 .map(MenuItemResponse::fromEntity)
@@ -176,7 +177,7 @@ public class MenuItemServiceImpl implements MenuItemService {
     @Override
     @Transactional(readOnly = true)
     public List<MenuItemResponse> getVeganItems(Long restaurantId) {
-        log.info("Recherche de tous les plats vegan pour le restaurant: {}", restaurantId);
+        log.debug("Recherche des plats vegan du restaurant ID: {}", restaurantId);
         return menuItemRepository.findByRestaurantIdAndVeganTrueAndAvailableTrueOrderByDisplayOrderAsc(restaurantId)
                 .stream()
                 .map(MenuItemResponse::fromEntity)
@@ -186,7 +187,7 @@ public class MenuItemServiceImpl implements MenuItemService {
     @Override
     @Transactional(readOnly = true)
     public List<MenuItemResponse> getGlutenFreeItems(Long restaurantId) {
-        log.info("Recherche de tous les plats sans gluten pour le restaurant: {}", restaurantId);
+        log.debug("Recherche des plats sans gluten du restaurant ID: {}", restaurantId);
         return menuItemRepository.findByRestaurantIdAndGlutenFreeTrueAndAvailableTrueOrderByDisplayOrderAsc(restaurantId)
                 .stream()
                 .map(MenuItemResponse::fromEntity)
@@ -195,26 +196,22 @@ public class MenuItemServiceImpl implements MenuItemService {
 
     @Override
     public MenuItemResponse toggleAvailability(Long id, Long userId, String role) {
-
-        log.info("Mise à jour de la disponibilité du plat: {}", id);
+        log.info("Mise à jour de la disponibilité du plat ID: {}", id);
 
         MenuItem menuItem = menuItemRepository.findById(id).orElseThrow(
-                () ->  new ResourceNotFoundException("Plat", "id", id)
+                () -> new ResourceNotFoundException("Plat", "id", id)
         );
 
         checkPermission(menuItem.getRestaurant(), userId, role);
-
         menuItem.setAvailable(!menuItem.getAvailable());
         MenuItem updatedMenuItem = menuItemRepository.save(menuItem);
-
-        log.info("Disponibilité du plat: {} mise à jour !",  updatedMenuItem.getName());
+        log.info("Disponibilité du plat {} mise à jour: {}", updatedMenuItem.getName(), updatedMenuItem.getAvailable());
 
         return MenuItemResponse.fromEntity(updatedMenuItem);
     }
 
     private void checkPermission(Restaurant restaurant, Long userId, String role) {
-
-        if ("ROLE_ADMIN".equals(role) && !restaurant.getOwnerId().equals(userId)) {
+        if ("ROLE_ADMIN".equals(role)) {
             return;
         }
         if (restaurant.getOwnerId().equals(userId)) {

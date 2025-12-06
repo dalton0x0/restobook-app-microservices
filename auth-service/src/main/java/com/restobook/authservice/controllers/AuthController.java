@@ -1,6 +1,11 @@
 package com.restobook.authservice.controllers;
 
-import com.restobook.authservice.dtos.*;
+import com.restobook.authservice.dtos.request.LoginRequest;
+import com.restobook.authservice.dtos.request.RefreshTokenRequest;
+import com.restobook.authservice.dtos.request.RegisterRequest;
+import com.restobook.authservice.dtos.response.ApiResponse;
+import com.restobook.authservice.dtos.response.AuthResponse;
+import com.restobook.authservice.dtos.response.UserResponse;
 import com.restobook.authservice.security.UserDetailsImpl;
 import com.restobook.authservice.services.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -33,11 +38,8 @@ public class AuthController {
                     "L'utilisateur doit se connecter séparément après l'inscription."
     )
     public ResponseEntity<@NonNull ApiResponse<UserResponse>> register(@Valid @RequestBody RegisterRequest request) {
-        log.info("Requête d'inscription reçue pour: {}", request.getEmail());
-
+        log.debug("Requête HTTP POST /auth/register - Email: {}", request.getEmail());
         UserResponse userResponse = authService.register(request);
-
-        log.info("Inscription réussie pour: {}", request.getEmail());
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Inscription réussie. Veuillez vous connecter.", userResponse));
@@ -46,11 +48,8 @@ public class AuthController {
     @PostMapping("/login")
     @Operation(summary = "Connexion", description = "Authentifie un utilisateur et retourne les tokens JWT")
     public ResponseEntity<@NonNull ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest request) {
-        log.info("Requête de connexion reçue pour: {}", request.getEmail());
-
+        log.debug("Requête HTTP POST /auth/login - Email: {}", request.getEmail());
         AuthResponse authResponse = authService.login(request);
-
-        log.info("Connexion réussie pour: {}", request.getEmail());
         return ResponseEntity.ok(ApiResponse.success("Connexion réussie", authResponse));
     }
 
@@ -62,11 +61,8 @@ public class AuthController {
                     "Le client DOIT stocker le nouveau refresh token retourné."
     )
     public ResponseEntity<@NonNull ApiResponse<AuthResponse>> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
-        log.info("Requête de rafraîchissement de token reçue");
-
+        log.debug("Requête HTTP POST /auth/refresh");
         AuthResponse authResponse = authService.refreshToken(request);
-
-        log.info("Token rafraîchi avec succès");
         return ResponseEntity.ok(ApiResponse.success("Token rafraîchi avec succès", authResponse));
     }
 
@@ -77,11 +73,8 @@ public class AuthController {
                     "générer de nouveaux access tokens."
     )
     public ResponseEntity<@NonNull ApiResponse<Void>> logout(@Valid @RequestBody RefreshTokenRequest request) {
-        log.info("Requête de déconnexion reçue");
-
+        log.debug("Requête HTTP POST /auth/logout");
         authService.logout(request.getRefreshToken());
-
-        log.info("Déconnexion réussie");
         return ResponseEntity.ok(ApiResponse.success("Déconnexion réussie"));
     }
 
@@ -92,11 +85,8 @@ public class AuthController {
                     "Toutes les sessions actives seront invalidées."
     )
     public ResponseEntity<@NonNull ApiResponse<Void>> logoutAll(@AuthenticationPrincipal UserDetailsImpl userDetails) {
-        log.info("Requête de déconnexion de toutes les sessions pour: {}", userDetails.getEmail());
-
+        log.debug("Requête HTTP POST /auth/logout-all - Utilisateur: {}", userDetails.getEmail());
         authService.logoutAll(userDetails.getId());
-
-        log.info("Toutes les sessions ont été déconnectées pour: {}", userDetails.getEmail());
         return ResponseEntity.ok(ApiResponse.success("Toutes les sessions ont été déconnectées"));
     }
 }

@@ -1,6 +1,6 @@
 package com.restobook.authservice.exceptions;
 
-import com.restobook.authservice.dtos.ErrorResponse;
+import com.restobook.authservice.dtos.response.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -208,7 +208,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NoResourceFoundException.class)
     public ResponseEntity<@NonNull ErrorResponse> handleNoResourceFoundException(NoResourceFoundException ex, HttpServletRequest request) {
 
-        log.warn("Resource not found: {} - Path: {}", ex.getMessage(), request.getRequestURI());
+        log.warn("Resource does not exists: {} - Path: {}", ex.getMessage(), request.getRequestURI());
 
         ErrorResponse errorResponse = ErrorResponse.of(
                 HttpStatus.NOT_FOUND.value(),

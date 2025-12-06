@@ -15,55 +15,41 @@ import java.util.List;
 
 public interface RestaurantService {
 
-    // CRUD
-
-    RestaurantResponse createRestaurant(CreateRestaurantRequest request, Long ownerId);
-
-    RestaurantResponse getRestaurantById(Long id);
-
-    RestaurantResponse updateRestaurant(Long id, UpdateRestaurantRequest request, Long userId, String role);
-
-    void deleteRestaurant(Long id, Long userId, String role);
-
-    // Recherche
-
     Page<@NonNull RestaurantResponse> getAllRestaurants(Pageable pageable);
 
-    Page<@NonNull RestaurantResponse> searchRestaurants(String keyword, Pageable pageable);
+    RestaurantResponse getRestaurantById(Long id);
 
     Page<@NonNull RestaurantResponse> getRestaurantsByCity(String city, Pageable pageable);
 
     Page<@NonNull RestaurantResponse> getRestaurantsByCuisineType(String cuisineType, Pageable pageable);
 
-    Page<@NonNull RestaurantResponse> getRestaurantsByFilters(String city, String cuisineType, Double minRating, Pageable pageable);
-
     Page<@NonNull RestaurantResponse> getTopRatedRestaurants(Pageable pageable);
 
-    // Owner
-
-    Page<@NonNull RestaurantResponse> getRestaurantsByOwner(Long ownerId, Pageable pageable);
-
-    // Horaires
-
     List<OpeningHoursResponse> getOpeningHours(Long restaurantId);
-
-    List<OpeningHoursResponse> updateOpeningHours(Long restaurantId, List<OpeningHoursRequest> requests, Long userId, String role);
-
-    // Activation
-
-    RestaurantResponse activateRestaurant(Long id, Long userId, String role);
-
-    RestaurantResponse deactivateRestaurant(Long id, Long userId, String role);
-
-    // Statistiques
-
-    void updateRestaurantRating(Long restaurantId, Double newRating, Integer totalReviews);
 
     List<String> getAllCities();
 
     List<String> getAllCuisineTypes();
 
-    // Interne
+    Page<@NonNull RestaurantResponse> searchRestaurants(String keyword, Pageable pageable);
+
+    Page<@NonNull RestaurantResponse> getRestaurantsByFilters(String city, String cuisineType, Double minRating, Pageable pageable);
+
+    RestaurantResponse createRestaurant(CreateRestaurantRequest request, Long ownerId);
+
+    RestaurantResponse updateRestaurant(Long id, UpdateRestaurantRequest request, Long userId, String role);
+
+    List<OpeningHoursResponse> updateOpeningHours(Long restaurantId, List<OpeningHoursRequest> requests, Long userId, String role);
+
+    void updateRestaurantRating(Long restaurantId, Double newRating, Integer totalReviews);
+
+    void deleteRestaurant(Long id, Long userId, String role);
+
+    RestaurantResponse activateRestaurant(Long id, Long userId, String role);
+
+    RestaurantResponse deactivateRestaurant(Long id, Long userId, String role);
+
+    Page<@NonNull RestaurantResponse> getRestaurantsByOwner(Long ownerId, Pageable pageable);
 
     boolean restaurantExists(Long id);
 

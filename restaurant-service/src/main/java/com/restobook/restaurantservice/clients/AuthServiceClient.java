@@ -23,15 +23,15 @@ public class AuthServiceClient {
     }
 
     public TokenValidationResponse validateToken(String token) {
-        log.debug("Validation du token aupès de l'auth service");
+        log.debug("Validation du token auprès de l'auth service");
 
         try {
             TokenValidationResponse response = webClient.get()
                     .uri("/api/v1/internal/validate")
-                    .header("Authorization", "Bearer" + token)
+                    .header("Authorization", "Bearer " + token)
                     .retrieve()
                     .onStatus(HttpStatusCode::is4xxClientError, clientResponse -> {
-                        log.error("Token invalide ou expiré");
+                        log.debug("Token invalide ou expiré");
                         return Mono.error(new UnauthorizedException("Token invalide ou expiré"));
                     })
                     .onStatus(HttpStatusCode::is5xxServerError, clientResponse -> {
@@ -42,7 +42,7 @@ public class AuthServiceClient {
                     .block();
 
             if (response == null || !response.isValid()) {
-                log.warn("Token non valide");
+                log.debug("Token non valide");
                 throw new UnauthorizedException("Token non valide");
             }
 
@@ -62,10 +62,10 @@ public class AuthServiceClient {
         try {
             return webClient.get()
                     .uri("api/v1/internal/users/{id}", userId)
-                    .header("Authorization", "Bearer" + token)
+                    .header("Authorization", "Bearer " + token)
                     .retrieve()
                     .onStatus(HttpStatusCode::is4xxClientError, clientResponse ->
-                        Mono.error(new ResourceNotFoundException("Utilisateur inexistant")))
+                            Mono.error(new ResourceNotFoundException("Utilisateur inexistant")))
                     .bodyToMono(TokenValidationResponse.UserInfo.class)
                     .block();
         } catch (Exception e) {
@@ -80,7 +80,7 @@ public class AuthServiceClient {
         try {
             Boolean exists = webClient.get()
                     .uri("api/v1/internal/users/{id}/exists", userId)
-                    .header("Authorization", "Bearer" + token)
+                    .header("Authorization", "Bearer " + token)
                     .retrieve()
                     .bodyToMono(Boolean.class)
                     .block();

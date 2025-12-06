@@ -36,7 +36,7 @@ public class RestaurantServiceImpl implements RestaurantService {
     @Override
     @Transactional
     public RestaurantResponse createRestaurant(CreateRestaurantRequest request, Long ownerId) {
-        log.info("Création d'un nouveau restaurant par le propriétaire: {}", ownerId);
+        log.info("Création d'un nouveau restaurant par le propriétaire ID: {}", ownerId);
 
         Restaurant newRestaurant = Restaurant.builder()
                 .name(request.getName())
@@ -54,7 +54,7 @@ public class RestaurantServiceImpl implements RestaurantService {
                 .build();
 
         Restaurant savedRestaurant = restaurantRepository.save(newRestaurant);
-        log.info("Restaurant crée: {}", savedRestaurant);
+        log.info("Restaurant créé: {} (ID: {})", savedRestaurant.getName(), savedRestaurant.getId());
 
         if (request.getOpeningHours() != null && !request.getOpeningHours().isEmpty()) {
             saveOpeningHours(savedRestaurant, request.getOpeningHours());
@@ -66,20 +66,21 @@ public class RestaurantServiceImpl implements RestaurantService {
     @Override
     @Transactional(readOnly = true)
     public RestaurantResponse getRestaurantById(Long id) {
-        log.debug("Récupération d'un restaurant avec ID: {}", id);
+        log.debug("Récupération du restaurant ID: {}", id);
 
         Restaurant restaurant = restaurantRepository.findById(id).orElseThrow(
                 () -> new ResourceNotFoundException("Restaurant", "id", id)
         );
-        log.info("Restaurant trouvé: {}", restaurant);
 
-        return RestaurantResponse.fromEntity(restaurant);
+        log.debug("Restaurant trouvé: {}", restaurant.getName());
+
+        return RestaurantResponse.fromEntityWithHours(restaurant);
     }
 
     @Override
     @Transactional
     public RestaurantResponse updateRestaurant(Long id, UpdateRestaurantRequest request, Long userId, String role) {
-        log.info("Mise à jour du restaurant: {} par l'utilisateur {}", id, userId);
+        log.info("Mise à jour du restaurant ID: {} par l'utilisateur ID: {}", id, userId);
 
         Restaurant restaurant = restaurantRepository.findById(id).orElseThrow(
                 () -> new ResourceNotFoundException("Restaurant", "id", id)
@@ -119,7 +120,7 @@ public class RestaurantServiceImpl implements RestaurantService {
         }
 
         Restaurant updatedRestaurant = restaurantRepository.save(restaurant);
-        log.info("Restaurant mise à jour: {}", id);
+        log.info("Restaurant mis à jour: {} (ID: {})", updatedRestaurant.getName(), id);
 
         return RestaurantResponse.fromEntity(updatedRestaurant);
     }
@@ -127,7 +128,7 @@ public class RestaurantServiceImpl implements RestaurantService {
     @Override
     @Transactional
     public void deleteRestaurant(Long id, Long userId, String role) {
-        log.info("Suppression du restaurant: {} par l'utilisateur {}", id, userId);
+        log.info("Suppression du restaurant ID: {} par l'utilisateur ID: {}", id, userId);
 
         Restaurant restaurant = restaurantRepository.findById(id).orElseThrow(
                 () -> new ResourceNotFoundException("Restaurant", "id", id)
@@ -135,14 +136,14 @@ public class RestaurantServiceImpl implements RestaurantService {
 
         checkPermission(restaurant, userId, role);
         restaurantRepository.delete(restaurant);
-        log.info("Restaurant deleted: {}", id);
-
+        log.info("Restaurant supprimé: {} (ID: {})", restaurant.getName(), id);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<@NonNull RestaurantResponse> getAllRestaurants(Pageable pageable) {
-        log.debug("Récupération de tous les restaurants actifs");
+        log.debug("Récupération de tous les restaurants actifs - Page: {}, Taille: {}",
+                pageable.getPageNumber(), pageable.getPageSize());
         return restaurantRepository.findByActiveTrue(pageable)
                 .map(RestaurantResponse::fromEntity);
     }
@@ -174,7 +175,7 @@ public class RestaurantServiceImpl implements RestaurantService {
     @Override
     @Transactional(readOnly = true)
     public Page<@NonNull RestaurantResponse> getRestaurantsByFilters(String city, String cuisineType, Double minRating, Pageable pageable) {
-        log.debug("Recherche avancés des restaurants avec les filtres. City: {}, type de cuisine: {}, note: {}", city, cuisineType, minRating);
+        log.debug("Recherche avancée des restaurants - Ville: {}, Cuisine: {}, Note min: {}", city, cuisineType, minRating);
         return restaurantRepository.findByFilters(city, cuisineType, minRating, pageable)
                 .map(RestaurantResponse::fromEntity);
     }
@@ -190,7 +191,7 @@ public class RestaurantServiceImpl implements RestaurantService {
     @Override
     @Transactional(readOnly = true)
     public Page<@NonNull RestaurantResponse> getRestaurantsByOwner(Long ownerId, Pageable pageable) {
-        log.debug("Récupération des restaurants du propriétaire: {}", ownerId);
+        log.debug("Récupération des restaurants du propriétaire ID: {}", ownerId);
         return restaurantRepository.findByOwnerId(ownerId, pageable)
                 .map(RestaurantResponse::fromEntity);
     }
@@ -198,11 +199,12 @@ public class RestaurantServiceImpl implements RestaurantService {
     @Override
     @Transactional(readOnly = true)
     public List<OpeningHoursResponse> getOpeningHours(Long restaurantId) {
-        log.debug("Récupération des horaires d'ouverture du restaurant: {}", restaurantId);
+        log.debug("Récupération des horaires d'ouverture du restaurant ID: {}", restaurantId);
 
         if (!restaurantRepository.existsById(restaurantId)) {
             throw new ResourceNotFoundException("Restaurant", "id", restaurantId);
         }
+
         return openingHourRepository.findByRestaurantIdOrderByDayOfWeek(restaurantId)
                 .stream()
                 .map(OpeningHoursResponse::fromEntity)
@@ -212,7 +214,7 @@ public class RestaurantServiceImpl implements RestaurantService {
     @Override
     @Transactional
     public List<OpeningHoursResponse> updateOpeningHours(Long restaurantId, List<OpeningHoursRequest> requests, Long userId, String role) {
-        log.debug("Mise à jour des horaires d'ouverture du restaurant: {}", restaurantId);
+        log.info("Mise à jour des horaires d'ouverture du restaurant ID: {}", restaurantId);
 
         Restaurant restaurant = restaurantRepository.findById(restaurantId).orElseThrow(
                 () -> new ResourceNotFoundException("Restaurant", "id", restaurantId)
@@ -222,6 +224,7 @@ public class RestaurantServiceImpl implements RestaurantService {
 
         openingHourRepository.deleteByRestaurantId(restaurantId);
         saveOpeningHours(restaurant, requests);
+        log.info("Horaires d'ouverture mis à jour pour le restaurant: {}", restaurant.getName());
 
         return openingHourRepository.findByRestaurantIdOrderByDayOfWeek(restaurantId)
                 .stream()
@@ -232,7 +235,7 @@ public class RestaurantServiceImpl implements RestaurantService {
     @Override
     @Transactional
     public RestaurantResponse activateRestaurant(Long id, Long userId, String role) {
-        log.info("Activation du restaurant: {} par l'utilisateur {}", id, userId);
+        log.info("Activation du restaurant ID: {} par l'utilisateur ID: {}", id, userId);
 
         Restaurant restaurant = restaurantRepository.findById(id).orElseThrow(
                 () -> new ResourceNotFoundException("Restaurant", "id", id)
@@ -240,15 +243,15 @@ public class RestaurantServiceImpl implements RestaurantService {
 
         restaurant.setActive(true);
         Restaurant savedRestaurant = restaurantRepository.save(restaurant);
+        log.info("Restaurant activé: {}", savedRestaurant.getName());
 
-        log.info("Restaurant activé: {}", savedRestaurant);
         return RestaurantResponse.fromEntity(savedRestaurant);
     }
 
     @Override
     @Transactional
     public RestaurantResponse deactivateRestaurant(Long id, Long userId, String role) {
-        log.info("Désactivation du restaurant: {} par l'utilisateur {}", id, userId);
+        log.info("Désactivation du restaurant ID: {} par l'utilisateur ID: {}", id, userId);
 
         Restaurant restaurant = restaurantRepository.findById(id).orElseThrow(
                 () -> new ResourceNotFoundException("Restaurant", "id", id)
@@ -257,13 +260,13 @@ public class RestaurantServiceImpl implements RestaurantService {
         restaurant.setActive(false);
         Restaurant savedRestaurant = restaurantRepository.save(restaurant);
 
-        log.info("Restaurant désactivé: {}", savedRestaurant);
+        log.info("Restaurant désactivé: {}", savedRestaurant.getName());
         return RestaurantResponse.fromEntity(savedRestaurant);
     }
 
     @Override
     public void updateRestaurantRating(Long restaurantId, Double newRating, Integer totalReviews) {
-        log.info("Mise à jour de la note du restaurant: {}", restaurantId);
+        log.info("Mise à jour de la note du restaurant ID: {} - Note: {}, Avis: {}", restaurantId, newRating, totalReviews);
 
         Restaurant restaurant = restaurantRepository.findById(restaurantId).orElseThrow(
                 () -> new ResourceNotFoundException("Restaurant", "id", restaurantId)
@@ -271,45 +274,44 @@ public class RestaurantServiceImpl implements RestaurantService {
 
         restaurant.setAverageRating(newRating);
         restaurant.setTotalReviews(totalReviews);
-        Restaurant savedRestaurant = restaurantRepository.save(restaurant);
-        log.info("Note du restaurant: {} mise à jour",  savedRestaurant.getName());
+        restaurantRepository.save(restaurant);
+        log.info("Note du restaurant {} mise à jour avec succès", restaurant.getName());
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<String> getAllCities() {
-        log.info("Recherche des villes de restaurants");
+        log.debug("Recherche des villes avec des restaurants");
         return restaurantRepository.findDistinctCities();
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<String> getAllCuisineTypes() {
-        log.info("Recherche des types de cuisines des restaurants");
+        log.debug("Recherche des types de cuisine disponibles");
         return restaurantRepository.findDistinctCuisineTypes();
     }
 
     @Override
     @Transactional(readOnly = true)
     public boolean restaurantExists(Long id) {
-        log.info("Vérification si un restaurant existe");
+        log.debug("Vérification de l'existence du restaurant ID: {}", id);
         return restaurantRepository.existsById(id);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Integer getRestaurantCapacity(Long id) {
-        log.info("Obtention de la capacité du restaurant {}:", id);
-
+        log.debug("Obtention de la capacité du restaurant ID: {}", id);
         return restaurantRepository.findById(id)
-                .map(Restaurant::getTotalReviews)
+                .map(Restaurant::getTotalCapacity)
                 .orElse(0);
     }
 
     @Override
     @Transactional(readOnly = true)
     public boolean isRestaurantOpen(Long id, DayOfWeek dayOfWeek, LocalTime time) {
-        log.info("Vérifier les heures d'ouvertures d'un restaurant");
+        log.debug("Vérification des heures d'ouverture du restaurant ID: {} - {} à {}", id, dayOfWeek, time);
 
         DayOfWeek day = DayOfWeek.valueOf(dayOfWeek.name());
 
@@ -334,8 +336,7 @@ public class RestaurantServiceImpl implements RestaurantService {
     }
 
     private void checkPermission(Restaurant restaurant, Long userId, String role) {
-
-        if ("ROLE_ADMIN".equals(role) && !restaurant.getOwnerId().equals(userId)) {
+        if ("ROLE_ADMIN".equals(role)) {
             return;
         }
         if (restaurant.getOwnerId().equals(userId)) {

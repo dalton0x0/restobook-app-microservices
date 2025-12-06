@@ -1,6 +1,11 @@
 package com.restobook.authservice.services.impl;
 
-import com.restobook.authservice.dtos.*;
+import com.restobook.authservice.dtos.request.LoginRequest;
+import com.restobook.authservice.dtos.request.RefreshTokenRequest;
+import com.restobook.authservice.dtos.request.RegisterRequest;
+import com.restobook.authservice.dtos.response.AuthResponse;
+import com.restobook.authservice.dtos.response.TokenValidationResponse;
+import com.restobook.authservice.dtos.response.UserResponse;
 import com.restobook.authservice.entities.RefreshToken;
 import com.restobook.authservice.entities.Role;
 import com.restobook.authservice.entities.User;
@@ -37,7 +42,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public UserResponse register(RegisterRequest request) {
-        log.info("Tentative d'inscription pour l'email: {}", request.getEmail());
+        log.info("Inscription d'un nouvel utilisateur: {}", request.getEmail());
 
         // Vérifier si l'email existe déjà
         if (userRepository.existsByEmail(request.getEmail().toLowerCase().trim())) {
@@ -82,7 +87,7 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public AuthResponse login(LoginRequest request) {
         String email = request.getEmail().toLowerCase().trim();
-        log.info("Tentative de connexion pour l'email: {}", email);
+        log.info("Connexion de l'utilisateur: {}", email);
 
         try {
             // Authentifier l'utilisateur
@@ -105,7 +110,6 @@ public class AuthServiceImpl implements AuthService {
             RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
 
             log.info("Connexion réussie pour: {}", email);
-
             return AuthResponse.of(
                     accessToken,
                     refreshToken.getToken(),
@@ -128,7 +132,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public AuthResponse refreshToken(RefreshTokenRequest request) {
-        log.info("Tentative de rafraîchissement de token");
+        log.info("Rafraîchissement de token");
 
         // Valider le refresh token
         RefreshToken oldRefreshToken = refreshTokenService.validateRefreshToken(request.getRefreshToken());
@@ -154,8 +158,7 @@ public class AuthServiceImpl implements AuthService {
         // Révoquer l'ancien refresh token et en créer un nouveau
         refreshTokenService.revokeRefreshToken(request.getRefreshToken());
         RefreshToken newRefreshToken = refreshTokenService.createRefreshToken(user);
-
-        log.info("Token rafraîchi avec succès pour: {} (rotation effectuée)", user.getEmail());
+        log.info("Token rafraîchi avec succès pour: {}", user.getEmail());
 
         return AuthResponse.of(
                 newAccessToken,
@@ -168,19 +171,16 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public void logout(String refreshToken) {
-        log.info("Tentative de déconnexion");
+        log.info("Déconnexion d'un utilisateur");
 
         if (refreshToken == null || refreshToken.isBlank()) {
-            log.warn("Tentative de déconnexion sans refresh token");
+            log.debug("Tentative de déconnexion sans refresh token");
             throw new InvalidTokenException("Refresh token requis pour la déconnexion");
         }
 
-        // Valider le refresh token
         refreshTokenService.validateRefreshToken(refreshToken);
-
-        // Révoquer le refresh token
         refreshTokenService.revokeRefreshToken(refreshToken);
-        log.info("Déconnexion réussie - refresh token révoqué");
+        log.info("Déconnexion réussie");
     }
 
     @Override
@@ -188,13 +188,12 @@ public class AuthServiceImpl implements AuthService {
     public void logoutAll(Long userId) {
         log.info("Déconnexion de toutes les sessions pour l'utilisateur ID: {}", userId);
 
-        // Vérifier que l'utilisateur existe
         if (!userRepository.existsById(userId)) {
             throw new ResourceNotFoundException("Utilisateur", "id", userId);
         }
 
         refreshTokenService.revokeAllUserTokens(userId);
-        log.info("Toutes les sessions ont été révoquées pour l'utilisateur ID: {}", userId);
+        log.info("Toutes les sessions révoquées pour l'utilisateur ID: {}", userId);
     }
 
     @Override
@@ -203,12 +202,12 @@ public class AuthServiceImpl implements AuthService {
         log.debug("Validation de token inter-service");
 
         if (token == null || token.isBlank()) {
-            log.warn("Token vide ou null");
+            log.debug("Token vide ou null");
             return TokenValidationResponse.invalid("Token manquant");
         }
 
         if (!jwtTokenProvider.validateToken(token)) {
-            log.warn("Token invalide ou expiré");
+            log.debug("Token invalide ou expiré");
             return TokenValidationResponse.invalid("Token invalide ou expiré");
         }
 
@@ -220,17 +219,17 @@ public class AuthServiceImpl implements AuthService {
             // Vérifier que l'utilisateur existe toujours et est actif
             User user = userRepository.findById(userId).orElse(null);
             if (user == null) {
-                log.warn("Utilisateur du token non trouvé: {}", userId);
+                log.debug("Utilisateur du token non trouvé: {}", userId);
                 return TokenValidationResponse.invalid("Utilisateur non trouvé");
             }
 
             if (!user.getEnabled()) {
-                log.warn("Utilisateur désactivé: {}", email);
+                log.debug("Utilisateur désactivé: {}", email);
                 return TokenValidationResponse.invalid("Compte désactivé");
             }
 
             if (!user.getAccountNonLocked()) {
-                log.warn("Utilisateur verrouillé: {}", email);
+                log.debug("Utilisateur verrouillé: {}", email);
                 return TokenValidationResponse.invalid("Compte verrouillé");
             }
 

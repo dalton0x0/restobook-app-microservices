@@ -1,4 +1,4 @@
-package com.restobook.authservice.dtos;
+package com.restobook.authservice.dtos.request;
 
 import com.restobook.authservice.enums.RoleName;
 import jakarta.validation.constraints.NotNull;

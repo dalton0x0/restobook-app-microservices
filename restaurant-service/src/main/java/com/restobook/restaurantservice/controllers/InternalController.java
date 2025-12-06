@@ -23,28 +23,28 @@ public class InternalController {
 
     private final RestaurantService restaurantService;
 
-    @GetMapping("/restaurants/{id}/exists")
-    @Operation(summary = "Vérifier l'existence d'un restaurant")
-    public ResponseEntity<@NonNull Boolean> restaurantExists(@PathVariable Long id) {
-        log.debug("Vérification de l'existence du restaurant: {}", id);
-        boolean exists = restaurantService.restaurantExists(id);
-        return ResponseEntity.ok(exists);
+    @GetMapping("/restaurants/{id}")
+    @Operation(summary = "Récupérer les informations d'un restaurant")
+    public ResponseEntity<@NonNull RestaurantResponse> getRestaurant(@PathVariable Long id) {
+        log.debug("Requête HTTP GET /internal/restaurants/{} - Requête inter-service", id);
+        RestaurantResponse restaurant = restaurantService.getRestaurantById(id);
+        return ResponseEntity.ok(restaurant);
     }
 
     @GetMapping("/restaurants/{id}/capacity")
     @Operation(summary = "Récupérer la capacité d'un restaurant")
     public ResponseEntity<@NonNull Integer> getRestaurantCapacity(@PathVariable Long id) {
-        log.debug("Récupération de la capacité du restaurant: {}", id);
+        log.debug("Requête HTTP GET /internal/restaurants/{}/capacity - Requête inter-service", id);
         Integer capacity = restaurantService.getRestaurantCapacity(id);
         return ResponseEntity.ok(capacity);
     }
 
-    @GetMapping("/restaurants/{id}")
-    @Operation(summary = "Récupérer les informations d'un restaurant")
-    public ResponseEntity<@NonNull RestaurantResponse> getRestaurant(@PathVariable Long id) {
-        log.debug("Récupération du restaurant: {}", id);
-        RestaurantResponse restaurant = restaurantService.getRestaurantById(id);
-        return ResponseEntity.ok(restaurant);
+    @GetMapping("/restaurants/{id}/exists")
+    @Operation(summary = "Vérifier l'existence d'un restaurant")
+    public ResponseEntity<@NonNull Boolean> restaurantExists(@PathVariable Long id) {
+        log.debug("Requête HTTP GET /internal/restaurants/{}/exists - Requête inter-service", id);
+        boolean exists = restaurantService.restaurantExists(id);
+        return ResponseEntity.ok(exists);
     }
 
     @GetMapping("/restaurants/{id}/is-open")
@@ -54,7 +54,7 @@ public class InternalController {
             @RequestParam DayOfWeek dayOfWeek,
             @RequestParam LocalTime time) {
 
-        log.debug("Vérification ouverture du restaurant {} - {} à {}", id, dayOfWeek, time);
+        log.debug("Requête HTTP GET /internal/restaurants/{}/is-open - {} à {} - Requête inter-service", id, dayOfWeek, time);
         boolean isOpen = restaurantService.isRestaurantOpen(id, dayOfWeek, time);
         return ResponseEntity.ok(isOpen);
     }
@@ -66,7 +66,7 @@ public class InternalController {
             @RequestParam Double rating,
             @RequestParam Integer totalReviews) {
 
-        log.info("Mise à jour de la note du restaurant {} - Note: {}, Avis: {}", id, rating, totalReviews);
+        log.debug("Requête HTTP PUT /internal/restaurants/{}/rating - Note: {}, Avis: {} - Requête inter-service", id, rating, totalReviews);
         restaurantService.updateRestaurantRating(id, rating, totalReviews);
         return ResponseEntity.ok(ApiResponse.success("Note mise à jour"));
     }

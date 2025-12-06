@@ -35,7 +35,8 @@ public class CreateRestaurantRequest {
     @Pattern(regexp = "^(\\+33|0)[1-9](\\d{8})$", message = "Format de téléphone invalide")
     private String phone;
 
-    @Email(message = "Format d'email invalide")
+    @Email(regexp = "^[\\w!#$%&’*+/=?`{|}~^-]+(?:\\.[\\w!#$%&’*+/=?`{|}~^-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,6}$",
+            message = "Format d'email invalide")
     @Size(max = 100, message = "L'email ne peut pas dépasser 100 caractères")
     private String email;
 

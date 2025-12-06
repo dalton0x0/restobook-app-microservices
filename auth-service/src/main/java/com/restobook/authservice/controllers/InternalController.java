@@ -1,7 +1,7 @@
 package com.restobook.authservice.controllers;
 
-import com.restobook.authservice.dtos.TokenValidationResponse;
-import com.restobook.authservice.dtos.UserResponse;
+import com.restobook.authservice.dtos.response.TokenValidationResponse;
+import com.restobook.authservice.dtos.response.UserResponse;
 import com.restobook.authservice.services.AuthService;
 import com.restobook.authservice.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -27,21 +27,13 @@ public class InternalController {
     public ResponseEntity<@NonNull TokenValidationResponse> validateToken(
             @RequestHeader("Authorization") String authHeader) {
 
-        log.debug("Requête de validation de token inter-service");
-
+        log.debug("Requête HTTP GET /internal/validate - Validation de token inter-service");
         String token = extractToken(authHeader);
         if (token == null) {
-            log.warn("Token manquant dans l'en-tête Authorization");
+            log.debug("Token manquant dans l'en-tête Authorization " + token);
             return ResponseEntity.ok(TokenValidationResponse.invalid("Token manquant"));
         }
-
         TokenValidationResponse response = authService.validateToken(token);
-
-        if (response.getValid()) {
-            log.debug("Token valide pour l'utilisateur ID: {}", response.getUserId());
-        } else {
-            log.warn("Validation du token échouée: {}", response.getMessage());
-        }
 
         return ResponseEntity.ok(response);
     }
@@ -49,28 +41,23 @@ public class InternalController {
     @GetMapping("/users/{id}")
     @Operation(summary = "Récupérer un utilisateur", description = "Récupère les informations d'un utilisateur par son ID (usage interne)")
     public ResponseEntity<@NonNull UserResponse> getUserById(@PathVariable Long id) {
-        log.debug("Requête interne - Récupération de l'utilisateur ID: {}", id);
-
+        log.debug("Requête HTTP GET /internal/users/{} - Requête inter-service", id);
         UserResponse user = userService.getUserById(id);
-
         return ResponseEntity.ok(user);
     }
 
     @GetMapping("/users/email/{email}")
     @Operation(summary = "Récupérer un utilisateur par email", description = "Récupère les informations d'un utilisateur par son email (usage interne)")
     public ResponseEntity<@NonNull UserResponse> getUserByEmail(@PathVariable String email) {
-        log.debug("Requête interne - Récupération de l'utilisateur par email: {}", email);
-
+        log.debug("Requête HTTP GET /internal/users/email/{} - Requête inter-service", email);
         UserResponse user = userService.getUserByEmail(email);
-
         return ResponseEntity.ok(user);
     }
 
     @GetMapping("/users/{id}/exists")
     @Operation(summary = "Vérifier l'existence d'un utilisateur", description = "Vérifie si un utilisateur existe par son ID")
     public ResponseEntity<@NonNull Boolean> userExists(@PathVariable Long id) {
-        log.debug("Requête interne - Vérification de l'existence de l'utilisateur ID: {}", id);
-
+        log.debug("Requête HTTP GET /internal/users/{}/exists - Requête inter-service", id);
         try {
             userService.getUserById(id);
             return ResponseEntity.ok(true);

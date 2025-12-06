@@ -1,4 +1,4 @@
-package com.restobook.authservice.dtos;
+package com.restobook.authservice.dtos.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

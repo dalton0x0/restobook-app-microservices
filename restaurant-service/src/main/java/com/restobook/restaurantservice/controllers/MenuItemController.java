@@ -35,7 +35,7 @@ public class MenuItemController {
     @GetMapping
     @Operation(summary = "Menu complet", description = "Récupère tous les plats d'un restaurant")
     public ResponseEntity<@NonNull ApiResponse<List<MenuItemResponse>>> getMenu(@PathVariable Long restaurantId) {
-        log.info("Récupération du menu du restaurant: {}", restaurantId);
+        log.debug("Requête HTTP GET /restaurants/{}/menu", restaurantId);
         List<MenuItemResponse> items = menuItemService.getMenuItemsByRestaurant(restaurantId);
         return ResponseEntity.ok(ApiResponse.success(items));
     }
@@ -43,48 +43,8 @@ public class MenuItemController {
     @GetMapping("/available")
     @Operation(summary = "Plats disponibles", description = "Récupère uniquement les plats disponibles")
     public ResponseEntity<@NonNull ApiResponse<List<MenuItemResponse>>> getAvailableMenu(@PathVariable Long restaurantId) {
+        log.debug("Requête HTTP GET /restaurants/{}/menu/available", restaurantId);
         List<MenuItemResponse> items = menuItemService.getAvailableMenuItems(restaurantId);
-        return ResponseEntity.ok(ApiResponse.success(items));
-    }
-
-    @GetMapping("/category/{category}")
-    @Operation(summary = "Plats par catégorie")
-    public ResponseEntity<@NonNull ApiResponse<List<MenuItemResponse>>> getMenuByCategory(
-            @PathVariable Long restaurantId,
-            @PathVariable MenuCategory category) {
-
-        List<MenuItemResponse> items = menuItemService.getMenuItemsByCategory(restaurantId, category);
-        return ResponseEntity.ok(ApiResponse.success(items));
-    }
-
-    @GetMapping("/search")
-    @Operation(summary = "Rechercher des plats")
-    public ResponseEntity<@NonNull ApiResponse<List<MenuItemResponse>>> searchMenu(
-            @PathVariable Long restaurantId,
-            @RequestParam String keyword) {
-
-        List<MenuItemResponse> items = menuItemService.searchMenuItems(restaurantId, keyword);
-        return ResponseEntity.ok(ApiResponse.success(items));
-    }
-
-    @GetMapping("/vegetarian")
-    @Operation(summary = "Plats végétariens")
-    public ResponseEntity<@NonNull ApiResponse<List<MenuItemResponse>>> getVegetarianMenu(@PathVariable Long restaurantId) {
-        List<MenuItemResponse> items = menuItemService.getVegetarianItems(restaurantId);
-        return ResponseEntity.ok(ApiResponse.success(items));
-    }
-
-    @GetMapping("/vegan")
-    @Operation(summary = "Plats vegan")
-    public ResponseEntity<@NonNull ApiResponse<List<MenuItemResponse>>> getVeganMenu(@PathVariable Long restaurantId) {
-        List<MenuItemResponse> items = menuItemService.getVeganItems(restaurantId);
-        return ResponseEntity.ok(ApiResponse.success(items));
-    }
-
-    @GetMapping("/gluten-free")
-    @Operation(summary = "Plats sans gluten")
-    public ResponseEntity<@NonNull ApiResponse<List<MenuItemResponse>>> getGlutenFreeMenu(@PathVariable Long restaurantId) {
-        List<MenuItemResponse> items = menuItemService.getGlutenFreeItems(restaurantId);
         return ResponseEntity.ok(ApiResponse.success(items));
     }
 
@@ -94,8 +54,55 @@ public class MenuItemController {
             @PathVariable Long restaurantId,
             @PathVariable Long itemId) {
 
+        log.debug("Requête HTTP GET /restaurants/{}/menu/{}", restaurantId, itemId);
         MenuItemResponse item = menuItemService.getMenuItemById(itemId);
         return ResponseEntity.ok(ApiResponse.success(item));
+    }
+
+    @GetMapping("/category/{category}")
+    @Operation(summary = "Plats par catégorie")
+    public ResponseEntity<@NonNull ApiResponse<List<MenuItemResponse>>> getMenuByCategory(
+            @PathVariable Long restaurantId,
+            @PathVariable MenuCategory category) {
+
+        log.debug("Requête HTTP GET /restaurants/{}/menu/category/{}", restaurantId, category);
+        List<MenuItemResponse> items = menuItemService.getMenuItemsByCategory(restaurantId, category);
+        return ResponseEntity.ok(ApiResponse.success(items));
+    }
+
+    @GetMapping("/vegetarian")
+    @Operation(summary = "Plats végétariens")
+    public ResponseEntity<@NonNull ApiResponse<List<MenuItemResponse>>> getVegetarianMenu(@PathVariable Long restaurantId) {
+        log.debug("Requête HTTP GET /restaurants/{}/menu/vegetarian", restaurantId);
+        List<MenuItemResponse> items = menuItemService.getVegetarianItems(restaurantId);
+        return ResponseEntity.ok(ApiResponse.success(items));
+    }
+
+    @GetMapping("/vegan")
+    @Operation(summary = "Plats vegan")
+    public ResponseEntity<@NonNull ApiResponse<List<MenuItemResponse>>> getVeganMenu(@PathVariable Long restaurantId) {
+        log.debug("Requête HTTP GET /restaurants/{}/menu/vegan", restaurantId);
+        List<MenuItemResponse> items = menuItemService.getVeganItems(restaurantId);
+        return ResponseEntity.ok(ApiResponse.success(items));
+    }
+
+    @GetMapping("/gluten-free")
+    @Operation(summary = "Plats sans gluten")
+    public ResponseEntity<@NonNull ApiResponse<List<MenuItemResponse>>> getGlutenFreeMenu(@PathVariable Long restaurantId) {
+        log.debug("Requête HTTP GET /restaurants/{}/menu/gluten-free", restaurantId);
+        List<MenuItemResponse> items = menuItemService.getGlutenFreeItems(restaurantId);
+        return ResponseEntity.ok(ApiResponse.success(items));
+    }
+
+    @GetMapping("/search")
+    @Operation(summary = "Rechercher des plats")
+    public ResponseEntity<@NonNull ApiResponse<List<MenuItemResponse>>> searchMenu(
+            @PathVariable Long restaurantId,
+            @RequestParam String keyword) {
+
+        log.debug("Requête HTTP GET /restaurants/{}/menu/search - Mot-clé: {}", restaurantId, keyword);
+        List<MenuItemResponse> items = menuItemService.searchMenuItems(restaurantId, keyword);
+        return ResponseEntity.ok(ApiResponse.success(items));
     }
 
     // Endpoints authentifiés
@@ -108,10 +115,8 @@ public class MenuItemController {
             @RequestHeader("Authorization") String authHeader) {
 
         TokenValidationResponse tokenInfo = validateToken(authHeader);
-
-        log.info("Création d'un plat pour le restaurant: {}", restaurantId);
+        log.debug("Requête HTTP POST /restaurants/{}/menu - Utilisateur: {}", restaurantId, tokenInfo.getEmail());
         MenuItemResponse item = menuItemService.createMenuItem(restaurantId, request, tokenInfo.getUserId(), tokenInfo.getRole());
-
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Plat ajouté au menu", item));
     }
@@ -124,23 +129,10 @@ public class MenuItemController {
             @Valid @RequestBody UpdateMenuItemRequest request,
             @RequestHeader("Authorization") String authHeader) {
 
-         TokenValidationResponse tokenInfo = validateToken(authHeader);
-
+        TokenValidationResponse tokenInfo = validateToken(authHeader);
+        log.debug("Requête HTTP PUT /restaurants/{}/menu/{} - Utilisateur: {}", restaurantId, itemId, tokenInfo.getEmail());
         MenuItemResponse item = menuItemService.updateMenuItem(itemId, request, tokenInfo.getUserId(), tokenInfo.getRole());
         return ResponseEntity.ok(ApiResponse.success("Plat mis à jour", item));
-    }
-
-    @DeleteMapping("/{itemId}")
-    @Operation(summary = "Supprimer un plat")
-    public ResponseEntity<@NonNull ApiResponse<Void>> deleteMenuItem(
-            @PathVariable Long restaurantId,
-            @PathVariable Long itemId,
-            @RequestHeader("Authorization") String authHeader) {
-
-        TokenValidationResponse tokenInfo = validateToken(authHeader);
-
-        menuItemService.deleteMenuItem(itemId, tokenInfo.getUserId(), tokenInfo.getRole());
-        return ResponseEntity.ok(ApiResponse.success("Plat supprimé du menu"));
     }
 
     @PatchMapping("/{itemId}/toggle-availability")
@@ -151,9 +143,22 @@ public class MenuItemController {
             @RequestHeader("Authorization") String authHeader) {
 
         TokenValidationResponse tokenInfo = validateToken(authHeader);
-
+        log.debug("Requête HTTP PATCH /restaurants/{}/menu/{}/toggle-availability - Utilisateur: {}", restaurantId, itemId, tokenInfo.getEmail());
         MenuItemResponse item = menuItemService.toggleAvailability(itemId, tokenInfo.getUserId(), tokenInfo.getRole());
         return ResponseEntity.ok(ApiResponse.success("Disponibilité mise à jour", item));
+    }
+
+    @DeleteMapping("/{itemId}")
+    @Operation(summary = "Supprimer un plat")
+    public ResponseEntity<@NonNull ApiResponse<Void>> deleteMenuItem(
+            @PathVariable Long restaurantId,
+            @PathVariable Long itemId,
+            @RequestHeader("Authorization") String authHeader) {
+
+        TokenValidationResponse tokenInfo = validateToken(authHeader);
+        log.debug("Requête HTTP DELETE /restaurants/{}/menu/{} - Utilisateur: {}", restaurantId, itemId, tokenInfo.getEmail());
+        menuItemService.deleteMenuItem(itemId, tokenInfo.getUserId(), tokenInfo.getRole());
+        return ResponseEntity.ok(ApiResponse.success("Plat supprimé du menu"));
     }
 
     private TokenValidationResponse validateToken(String authHeader) {

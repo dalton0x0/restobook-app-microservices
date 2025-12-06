@@ -39,7 +39,7 @@ public class RestaurantController {
     public ResponseEntity<@NonNull ApiResponse<PageResponse<RestaurantResponse>>> getAllRestaurants(
             @PageableDefault(sort = "name", direction = Sort.Direction.ASC) Pageable pageable) {
 
-        log.info("Récupération de tous les restaurants actifs");
+        log.debug("Requête HTTP GET /restaurants - Page: {}, Taille: {}", pageable.getPageNumber(), pageable.getPageSize());
         Page<@NonNull RestaurantResponse> restaurants = restaurantService.getAllRestaurants(pageable);
         return ResponseEntity.ok(ApiResponse.success(PageResponse.of(restaurants)));
     }
@@ -47,21 +47,9 @@ public class RestaurantController {
     @GetMapping("/{id}")
     @Operation(summary = "Détails d'un restaurant", description = "Récupère les détails d'un restaurant par son ID")
     public ResponseEntity<@NonNull ApiResponse<RestaurantResponse>> getRestaurantById(@PathVariable Long id) {
-
-        log.info("Récupération des détails d'un restaurant: {}", id);
+        log.debug("Requête HTTP GET /restaurants/{}", id);
         RestaurantResponse restaurant = restaurantService.getRestaurantById(id);
         return ResponseEntity.ok(ApiResponse.success(restaurant));
-    }
-
-    @GetMapping("/search")
-    @Operation(summary = "Recherche des restaurants par mot-clé", description = "Recherche par nom, ville ou type de cuisine")
-    public ResponseEntity<@NonNull ApiResponse<PageResponse<RestaurantResponse>>> searchRestaurants(
-            @RequestParam String keyword,
-            @PageableDefault Pageable pageable) {
-
-        log.info("Recherche d'un restaurant par mot-clé: {}", keyword);
-        Page<@NonNull RestaurantResponse> restaurants = restaurantService.searchRestaurants(keyword, pageable);
-        return ResponseEntity.ok(ApiResponse.success(PageResponse.of(restaurants)));
     }
 
     @GetMapping("/city/{city}")
@@ -70,7 +58,7 @@ public class RestaurantController {
             @PathVariable String city,
             @PageableDefault Pageable pageable) {
 
-        log.info("Recherche des restaurants par ville: {}", city);
+        log.debug("Requête HTTP GET /restaurants/city/{}", city);
         Page<@NonNull RestaurantResponse> restaurants = restaurantService.getRestaurantsByCity(city, pageable);
         return ResponseEntity.ok(ApiResponse.success(PageResponse.of(restaurants)));
     }
@@ -81,8 +69,51 @@ public class RestaurantController {
             @PathVariable String cuisineType,
             @PageableDefault Pageable pageable) {
 
-        log.info("Restaurants par type de cuisine: {}", cuisineType);
+        log.debug("Requête HTTP GET /restaurants/cuisine/{}", cuisineType);
         Page<@NonNull RestaurantResponse> restaurants = restaurantService.getRestaurantsByCuisineType(cuisineType, pageable);
+        return ResponseEntity.ok(ApiResponse.success(PageResponse.of(restaurants)));
+    }
+
+    @GetMapping("/top-rated")
+    @Operation(summary = "Restaurants les mieux notés")
+    public ResponseEntity<@NonNull ApiResponse<PageResponse<RestaurantResponse>>> getTopRatedRestaurants(@PageableDefault Pageable pageable) {
+        log.debug("Requête HTTP GET /restaurants/top-rated");
+        Page<@NonNull RestaurantResponse> restaurants = restaurantService.getTopRatedRestaurants(pageable);
+        return ResponseEntity.ok(ApiResponse.success(PageResponse.of(restaurants)));
+    }
+
+    @GetMapping("/{id}/opening-hours")
+    @Operation(summary = "Horaires d'ouverture")
+    public ResponseEntity<@NonNull ApiResponse<List<OpeningHoursResponse>>> getOpeningHours(@PathVariable Long id) {
+        log.debug("Requête HTTP GET /restaurants/{}/opening-hours", id);
+        List<OpeningHoursResponse> hours = restaurantService.getOpeningHours(id);
+        return ResponseEntity.ok(ApiResponse.success(hours));
+    }
+
+    @GetMapping("/cities")
+    @Operation(summary = "Liste des villes")
+    public ResponseEntity<@NonNull ApiResponse<List<String>>> getAllCities() {
+        log.debug("Requête HTTP GET /restaurants/cities");
+        List<String> cities = restaurantService.getAllCities();
+        return ResponseEntity.ok(ApiResponse.success(cities));
+    }
+
+    @GetMapping("/cuisine-types")
+    @Operation(summary = "Liste des types de cuisine")
+    public ResponseEntity<@NonNull ApiResponse<List<String>>> getAllCuisineTypes() {
+        log.debug("Requête HTTP GET /restaurants/cuisine-types");
+        List<String> types = restaurantService.getAllCuisineTypes();
+        return ResponseEntity.ok(ApiResponse.success(types));
+    }
+
+    @GetMapping("/search")
+    @Operation(summary = "Recherche des restaurants par mot-clé", description = "Recherche par nom, ville ou type de cuisine")
+    public ResponseEntity<@NonNull ApiResponse<PageResponse<RestaurantResponse>>> searchRestaurants(
+            @RequestParam String keyword,
+            @PageableDefault Pageable pageable) {
+
+        log.debug("Requête HTTP GET /restaurants/search - Mot-clé: {}", keyword);
+        Page<@NonNull RestaurantResponse> restaurants = restaurantService.searchRestaurants(keyword, pageable);
         return ResponseEntity.ok(ApiResponse.success(PageResponse.of(restaurants)));
     }
 
@@ -94,45 +125,9 @@ public class RestaurantController {
             @RequestParam(required = false) Double minRating,
             @PageableDefault Pageable pageable) {
 
-        log.info("Filtrer les restaurants");
+        log.debug("Requête HTTP GET /restaurants/filter - Ville: {}, Cuisine: {}, Note min: {}", city, cuisineType, minRating);
         Page<@NonNull RestaurantResponse> restaurants = restaurantService.getRestaurantsByFilters(city, cuisineType, minRating, pageable);
         return ResponseEntity.ok(ApiResponse.success(PageResponse.of(restaurants)));
-    }
-
-    @GetMapping("/top-rated")
-    @Operation(summary = "Restaurants les mieux notés")
-    public ResponseEntity<@NonNull ApiResponse<PageResponse<RestaurantResponse>>> getTopRatedRestaurants(@PageableDefault Pageable pageable) {
-
-        log.info("Récupération des restaurants les mieux notés");
-        Page<@NonNull RestaurantResponse> restaurants = restaurantService.getTopRatedRestaurants(pageable);
-        return ResponseEntity.ok(ApiResponse.success(PageResponse.of(restaurants)));
-    }
-
-    @GetMapping("/{id}/opening-hours")
-    @Operation(summary = "Horaires d'ouverture")
-    public ResponseEntity<@NonNull ApiResponse<List<OpeningHoursResponse>>> getOpeningHours(@PathVariable Long id) {
-
-        log.info("Récupération des heures d'ouverture du restaurant: {}", id);
-        List<OpeningHoursResponse> hours = restaurantService.getOpeningHours(id);
-        return ResponseEntity.ok(ApiResponse.success(hours));
-    }
-
-    @GetMapping("/cities")
-    @Operation(summary = "Liste des villes")
-    public ResponseEntity<@NonNull ApiResponse<List<String>>> getAllCities() {
-
-        log.info("Récupération des villes ayant des restaurants");
-        List<String> cities = restaurantService.getAllCities();
-        return ResponseEntity.ok(ApiResponse.success(cities));
-    }
-
-    @GetMapping("/cuisine-types")
-    @Operation(summary = "Liste des types de cuisine")
-    public ResponseEntity<@NonNull ApiResponse<List<String>>> getAllCuisineTypes() {
-
-        log.info("Récupération des différents types de cuisine");
-        List<String> types = restaurantService.getAllCuisineTypes();
-        return ResponseEntity.ok(ApiResponse.success(types));
     }
 
     // Endpoints authentifiés
@@ -144,10 +139,8 @@ public class RestaurantController {
             @RequestHeader("Authorization") String authHeader) {
 
         TokenValidationResponse tokenInfo = validateToken(authHeader);
-
-        log.info("Création d'un restaurant par: {}", tokenInfo.getEmail());
+        log.debug("Requête HTTP POST /restaurants - Utilisateur: {}", tokenInfo.getEmail());
         RestaurantResponse restaurant = restaurantService.createRestaurant(request, tokenInfo.getUserId());
-
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Restaurant créé avec succès", restaurant));
     }
@@ -160,25 +153,9 @@ public class RestaurantController {
             @RequestHeader("Authorization") String authHeader) {
 
         TokenValidationResponse tokenInfo = validateToken(authHeader);
-
-        log.info("Modification du restaurant: {} par: {}", id, tokenInfo.getEmail());
+        log.debug("Requête HTTP PUT /restaurants/{} - Utilisateur: {}", id, tokenInfo.getEmail());
         RestaurantResponse restaurant = restaurantService.updateRestaurant(id, request, tokenInfo.getUserId(), tokenInfo.getRole());
-
         return ResponseEntity.ok(ApiResponse.success("Restaurant mis à jour", restaurant));
-    }
-
-    @DeleteMapping("/{id}")
-    @Operation(summary = "Supprimer un restaurant")
-    public ResponseEntity<@NonNull ApiResponse<Void>> deleteRestaurant(
-            @PathVariable Long id,
-            @RequestHeader("Authorization") String authHeader) {
-
-        TokenValidationResponse tokenInfo = validateToken(authHeader);
-
-        log.info("Suppression du restaurant: {} par: {}", id, tokenInfo.getEmail());
-        restaurantService.deleteRestaurant(id, tokenInfo.getUserId(), tokenInfo.getRole());
-
-        return ResponseEntity.ok(ApiResponse.success("Restaurant supprimé"));
     }
 
     @PutMapping("/{id}/opening-hours")
@@ -188,10 +165,8 @@ public class RestaurantController {
             @Valid @RequestBody List<OpeningHoursRequest> requests,
             @RequestHeader("Authorization") String authHeader) {
 
-        log.info("Modification des horaires d'ouverture du restaurant: {}", id);
-
         TokenValidationResponse tokenInfo = validateToken(authHeader);
-
+        log.debug("Requête HTTP PUT /restaurants/{}/opening-hours - Utilisateur: {}", id, tokenInfo.getEmail());
         List<OpeningHoursResponse> hours = restaurantService.updateOpeningHours(id, requests, tokenInfo.getUserId(), tokenInfo.getRole());
         return ResponseEntity.ok(ApiResponse.success("Horaires mis à jour", hours));
     }
@@ -202,10 +177,8 @@ public class RestaurantController {
             @PathVariable Long id,
             @RequestHeader("Authorization") String authHeader) {
 
-        log.info("Activation du restaurant: {}", id);
-
         TokenValidationResponse tokenInfo = validateToken(authHeader);
-
+        log.debug("Requête HTTP PATCH /restaurants/{}/activate - Utilisateur: {}", id, tokenInfo.getEmail());
         RestaurantResponse restaurant = restaurantService.activateRestaurant(id, tokenInfo.getUserId(), tokenInfo.getRole());
         return ResponseEntity.ok(ApiResponse.success("Restaurant activé", restaurant));
     }
@@ -217,9 +190,21 @@ public class RestaurantController {
             @RequestHeader("Authorization") String authHeader) {
 
         TokenValidationResponse tokenInfo = validateToken(authHeader);
-
+        log.debug("Requête HTTP PATCH /restaurants/{}/deactivate - Utilisateur: {}", id, tokenInfo.getEmail());
         RestaurantResponse restaurant = restaurantService.deactivateRestaurant(id, tokenInfo.getUserId(), tokenInfo.getRole());
         return ResponseEntity.ok(ApiResponse.success("Restaurant désactivé", restaurant));
+    }
+
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Supprimer un restaurant")
+    public ResponseEntity<@NonNull ApiResponse<Void>> deleteRestaurant(
+            @PathVariable Long id,
+            @RequestHeader("Authorization") String authHeader) {
+
+        TokenValidationResponse tokenInfo = validateToken(authHeader);
+        log.debug("Requête HTTP DELETE /restaurants/{} - Utilisateur: {}", id, tokenInfo.getEmail());
+        restaurantService.deleteRestaurant(id, tokenInfo.getUserId(), tokenInfo.getRole());
+        return ResponseEntity.ok(ApiResponse.success("Restaurant supprimé"));
     }
 
     @GetMapping("/my-restaurants")
@@ -229,9 +214,8 @@ public class RestaurantController {
             @PageableDefault Pageable pageable) {
 
         TokenValidationResponse tokenInfo = validateToken(authHeader);
+        log.debug("Requête HTTP GET /restaurants/my-restaurants - Utilisateur: {}", tokenInfo.getEmail());
         Page<@NonNull RestaurantResponse> restaurants = restaurantService.getRestaurantsByOwner(tokenInfo.getUserId(), pageable);
-        log.info("Récupération des restaurants du propriétaire: {}", tokenInfo.getEmail());
-
         return ResponseEntity.ok(ApiResponse.success(PageResponse.of(restaurants)));
     }
 

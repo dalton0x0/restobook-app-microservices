@@ -7,31 +7,28 @@ import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class OpenApiConfig {
 
-    @Value("${server.port}")
-    private String serverPort;
-
     @Bean
     public OpenAPI customOpenAPI() {
+
         final String securitySchemeName = "bearerAuth";
 
         return new OpenAPI()
                 .info(new Info()
                         .title("RestoBook - Auth Service API")
-                        .description("Service d'authentification et de gestion des utilisateurs pour RestoBook QuickEat")
+                        .description("Service API d'authentification et de gestion des utilisateurs pour RestoBook QuickEat")
                         .version("1.0.0")
                         .contact(new Contact()
                                 .name("QuickEat Development Team")
                                 .email("dev@example.fr")
                                 .url("https://www.cheridanh.cg"))
                         .license(new License()
-                                .name("Proprietary")
+                                .name("Propriétaire")
                                 .url("https://www.example.com")))
                 .addSecurityItem(new SecurityRequirement().addList(securitySchemeName))
                 .components(new Components()
