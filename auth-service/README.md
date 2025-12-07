@@ -5,7 +5,6 @@ Service d'authentification et de gestion des utilisateurs pour la plateforme Res
 ## Table des matières
 
 - [Description](#description)
-- [Architecture](#architecture)
 - [Rôles disponibles](#rôles-disponibles)
 - [Endpoints API](#endpoints-api)
 - [Configuration](#configuration)
@@ -27,26 +26,6 @@ Ce microservice gère l'ensemble des fonctionnalités liées à l'authentificati
 - **Gestion des profils** utilisateurs
 - **Administration** des utilisateurs (création avec rôle, activation/désactivation)
 - **Validation de tokens** pour les appels inter-services
-
-## Architecture
-
-```
-auth-service/
-├── src/main/java/com/restobook/auth/
-│   ├── config/           # Configurations (Security, JWT, OpenAPI)
-│   ├── controller/       # Contrôleurs REST
-│   ├── dto/
-│   │   ├── request/      # DTOs de requête
-│   │   └── response/     # DTOs de réponse
-│   ├── entity/           # Entités JPA
-│   ├── exception/        # Exceptions personnalisées + GlobalExceptionHandler
-│   ├── repository/       # Repositories JPA
-│   ├── security/         # Composants de sécurité (JWT, Filters)
-│   └── service/
-│       └── impl/         # Interfaces et implémentations des services
-└── src/main/resources/
-    └── application.yml   # Configuration de l'application
-```
 
 ## Rôles Disponibles
 
@@ -141,8 +120,8 @@ nano .env.properties
 | `JWT_REFRESH_EXPIRATION` | Durée refresh token (ms) | `604800000` (7j)        |
 | `LOG_LEVEL_ROOT`         | Niveau log racine        | `INFO`                  |
 | `LOG_LEVEL_APP`          | Niveau log application   | `DEBUG`                 |
-| `LOG_LEVEL_SECURITY`     | Niveau log sécurité      | `INFO`                  |
-| `LOG_LEVEL_SQL`          | Niveau log SQL           | `INFO`                  |
+| `LOG_LEVEL_SECURITY`     | Niveau log sécurité      | `DEBUG`                 |
+| `LOG_LEVEL_SQL`          | Niveau log SQL           | `DEBUG`                 |
 | `LOG_FILE_PATH`          | Chemin fichier log       | `logs/auth-service.log` |
 | `SWAGGER_ENABLED`        | Activer Swagger UI       | `true`                  |
 | `TOKEN_CLEANUP_CRON`     | CRON nettoyage tokens    | `0 0 2 * * ?`           |

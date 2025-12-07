@@ -5,7 +5,6 @@ Service de gestion des restaurants pour la plateforme RestoBook de QuickEat.
 ## Table des matières
 
 - [Description](#description)
-- [Architecture](#architecture)
 - [Base de sonnées](#base-de-données)
 - [Endpoints API](#endpoints-api)
 - [Configuration](#configuration)
@@ -24,25 +23,6 @@ Ce microservice gère :
 - **Gestion des menus** (plats, catégories, prix)
 - **Horaires d'ouverture** 
 - **Recherche et filtrage** des restaurants
-
-## Architecture
-
-```
-restaurant-service/
-├── src/main/java/com/restobook/restaurant/
-│   ├── client/           # Clients pour appels inter-services
-│   ├── config/           # Configurations
-│   ├── controller/       # Contrôleurs REST
-│   ├── dto/
-│   │   ├── request/      # DTOs de requête
-│   │   └── response/     # DTOs de réponse
-│   ├── entity/           # Entités JPA
-│   ├── exception/        # Exceptions + GlobalExceptionHandler
-│   ├── repository/       # Repositories JPA
-│   └── service/impl/     # Services
-└── src/main/resources/
-    └── application.yml
-```
 
 ## Base de données
 
@@ -170,23 +150,6 @@ Réponse :
   "email": "user@example.com",
   "role": "ROLE_CLIENT"
 }
-```
-
-## Communication Inter-Services
-
-Le Restaurant Service communique avec :
-- **Auth Service** (port 8081): Validation des tokens JWT
-
-```
-┌─────────────┐     ┌─────────────────────┐
-│   Client    │────>│  Restaurant Service │
-└─────────────┘     └──────────┬──────────┘
-                               │ WebClient
-                               ▼
-                    ┌─────────────────────┐
-                    │    Auth Service     │
-                    │   /internal/validate│
-                    └─────────────────────┘
 ```
 
 ## Exemples de requêtes
