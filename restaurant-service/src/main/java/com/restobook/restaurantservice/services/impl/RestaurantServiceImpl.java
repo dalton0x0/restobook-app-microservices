@@ -69,7 +69,7 @@ public class RestaurantServiceImpl implements RestaurantService {
         log.debug("Récupération du restaurant ID: {}", id);
 
         Restaurant restaurant = restaurantRepository.findById(id).orElseThrow(
-                () -> new ResourceNotFoundException("Restaurant", "id", id)
+                () -> new ResourceNotFoundException("id", id)
         );
 
         log.debug("Restaurant trouvé: {}", restaurant.getName());
@@ -83,7 +83,7 @@ public class RestaurantServiceImpl implements RestaurantService {
         log.info("Mise à jour du restaurant ID: {} par l'utilisateur ID: {}", id, userId);
 
         Restaurant restaurant = restaurantRepository.findById(id).orElseThrow(
-                () -> new ResourceNotFoundException("Restaurant", "id", id)
+                () -> new ResourceNotFoundException("id", id)
         );
 
         checkPermission(restaurant, userId, role);
@@ -131,7 +131,7 @@ public class RestaurantServiceImpl implements RestaurantService {
         log.info("Suppression du restaurant ID: {} par l'utilisateur ID: {}", id, userId);
 
         Restaurant restaurant = restaurantRepository.findById(id).orElseThrow(
-                () -> new ResourceNotFoundException("Restaurant", "id", id)
+                () -> new ResourceNotFoundException("id", id)
         );
 
         checkPermission(restaurant, userId, role);
@@ -202,7 +202,7 @@ public class RestaurantServiceImpl implements RestaurantService {
         log.debug("Récupération des horaires d'ouverture du restaurant ID: {}", restaurantId);
 
         if (!restaurantRepository.existsById(restaurantId)) {
-            throw new ResourceNotFoundException("Restaurant", "id", restaurantId);
+            throw new ResourceNotFoundException("id", restaurantId);
         }
 
         return openingHourRepository.findByRestaurantIdOrderByDayOfWeek(restaurantId)
@@ -217,7 +217,7 @@ public class RestaurantServiceImpl implements RestaurantService {
         log.info("Mise à jour des horaires d'ouverture du restaurant ID: {}", restaurantId);
 
         Restaurant restaurant = restaurantRepository.findById(restaurantId).orElseThrow(
-                () -> new ResourceNotFoundException("Restaurant", "id", restaurantId)
+                () -> new ResourceNotFoundException("id", restaurantId)
         );
 
         checkPermission(restaurant, userId, role);
@@ -238,7 +238,7 @@ public class RestaurantServiceImpl implements RestaurantService {
         log.info("Activation du restaurant ID: {} par l'utilisateur ID: {}", id, userId);
 
         Restaurant restaurant = restaurantRepository.findById(id).orElseThrow(
-                () -> new ResourceNotFoundException("Restaurant", "id", id)
+                () -> new ResourceNotFoundException("id", id)
         );
 
         restaurant.setActive(true);
@@ -254,7 +254,7 @@ public class RestaurantServiceImpl implements RestaurantService {
         log.info("Désactivation du restaurant ID: {} par l'utilisateur ID: {}", id, userId);
 
         Restaurant restaurant = restaurantRepository.findById(id).orElseThrow(
-                () -> new ResourceNotFoundException("Restaurant", "id", id)
+                () -> new ResourceNotFoundException("id", id)
         );
 
         restaurant.setActive(false);
@@ -269,7 +269,7 @@ public class RestaurantServiceImpl implements RestaurantService {
         log.info("Mise à jour de la note du restaurant ID: {} - Note: {}, Avis: {}", restaurantId, newRating, totalReviews);
 
         Restaurant restaurant = restaurantRepository.findById(restaurantId).orElseThrow(
-                () -> new ResourceNotFoundException("Restaurant", "id", restaurantId)
+                () -> new ResourceNotFoundException("id", restaurantId)
         );
 
         restaurant.setAverageRating(newRating);

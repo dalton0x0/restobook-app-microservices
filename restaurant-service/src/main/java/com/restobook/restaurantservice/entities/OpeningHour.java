@@ -48,7 +48,7 @@ public class OpeningHour {
     private Restaurant restaurant;
 
     public boolean isOpenAt(LocalTime time) {
-        if (closed) return false;
+        if (Boolean.TRUE.equals(closed)) return false;
 
         boolean openMorning = openingTimeMorning != null && closingTimeMorning != null
                 && time.isAfter(openingTimeMorning) && !time.isAfter(closingTimeMorning);

@@ -1,5 +1,6 @@
 package com.restobook.restaurantservice.clients;
 
+import com.restobook.restaurantservice.constants.AuthenticationConst;
 import com.restobook.restaurantservice.dtos.response.TokenValidationResponse;
 import com.restobook.restaurantservice.exceptions.ResourceNotFoundException;
 import com.restobook.restaurantservice.exceptions.UnauthorizedException;
@@ -28,14 +29,14 @@ public class AuthServiceClient {
         try {
             TokenValidationResponse response = webClient.get()
                     .uri("/api/v1/internal/validate")
-                    .header("Authorization", "Bearer " + token)
+                    .header(AuthenticationConst.AUTH_HEADER, AuthenticationConst.TOKEN_PREFIX + token)
                     .retrieve()
                     .onStatus(HttpStatusCode::is4xxClientError, clientResponse -> {
-                        log.debug("Token invalide ou expiré");
+                        log.debug("Token invalide ou expiré:{}", clientResponse.statusCode());
                         return Mono.error(new UnauthorizedException("Token invalide ou expiré"));
                     })
                     .onStatus(HttpStatusCode::is5xxServerError, clientResponse -> {
-                        log.error("Erreur du service d'authentification");
+                        log.error("Erreur du service d'authentification:{}", clientResponse.statusCode());
                         return Mono.error(new UnauthorizedException("Service d'authentification indisponible"));
                     })
                     .bodyToMono(TokenValidationResponse.class)
@@ -62,9 +63,9 @@ public class AuthServiceClient {
         try {
             return webClient.get()
                     .uri("api/v1/internal/users/{id}", userId)
-                    .header("Authorization", "Bearer " + token)
+                    .header(AuthenticationConst.AUTH_HEADER, AuthenticationConst.TOKEN_PREFIX + token)
                     .retrieve()
-                    .onStatus(HttpStatusCode::is4xxClientError, clientResponse ->
+                    .onStatus(HttpStatusCode::is4xxClientError, _ ->
                             Mono.error(new ResourceNotFoundException("Utilisateur inexistant")))
                     .bodyToMono(TokenValidationResponse.UserInfo.class)
                     .block();
@@ -80,7 +81,7 @@ public class AuthServiceClient {
         try {
             Boolean exists = webClient.get()
                     .uri("api/v1/internal/users/{id}/exists", userId)
-                    .header("Authorization", "Bearer " + token)
+                    .header(AuthenticationConst.AUTH_HEADER, AuthenticationConst.TOKEN_PREFIX + token)
                     .retrieve()
                     .bodyToMono(Boolean.class)
                     .block();

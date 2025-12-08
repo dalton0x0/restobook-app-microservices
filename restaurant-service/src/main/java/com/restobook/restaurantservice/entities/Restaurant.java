@@ -92,7 +92,9 @@ public class Restaurant {
     }
 
     @PreUpdate
-    public void onUpdate() {}
+    public void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
 
     public void addOpeningHours(OpeningHour hours) {
         openingHours.add(hours);
