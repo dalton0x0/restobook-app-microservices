@@ -8,6 +8,7 @@ import com.restobook.authservice.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NullMarked;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -22,6 +23,12 @@ public class DataInitializer implements CommandLineRunner {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
+    @Value("${ADMIN_EMAIL}")
+    private String adminEmail;
+
+    @Value("${ADMIN_PASSWORD}")
+    private String adminPassword;
+
     @Override
     @Transactional
     @NullMarked
@@ -34,10 +41,10 @@ public class DataInitializer implements CommandLineRunner {
 
     private String getDescription(RoleName roleName) {
         return switch (roleName) {
-            case CLIENT -> "Client de QuickEat";
-            case STAFF -> "Employé de restaurant QuickEat";
-            case OWNER -> "Propriétaire/Gérant de restaurant";
             case ADMIN -> "Administrateur système RestoBook";
+            case OWNER -> "Propriétaire/Gérant de restaurant";
+            case STAFF -> "Employé de restaurant QuickEat";
+            case CLIENT -> "Client de QuickEat";
         };
     }
 
@@ -57,8 +64,6 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void initializeAdminUser() {
-        String adminEmail = "admin@email.fr";
-        String adminPassword = "MonMotDePasse@123";
 
         if (!userRepository.existsByEmail(adminEmail)) {
             Role adminRole = roleRepository.findByName(RoleName.ADMIN)

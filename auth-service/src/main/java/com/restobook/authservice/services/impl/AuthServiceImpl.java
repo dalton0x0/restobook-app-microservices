@@ -117,13 +117,13 @@ public class AuthServiceImpl implements AuthService {
                     UserResponse.fromEntity(user)
             );
 
-        } catch (DisabledException ex) {
+        } catch (DisabledException _) {
             log.warn("Tentative de connexion sur un compte désactivé: {}", email);
             throw new AccountDisabledException();
-        } catch (LockedException ex) {
+        } catch (LockedException _) {
             log.warn("Tentative de connexion sur un compte verrouillé: {}", email);
             throw new AccountLockedException();
-        } catch (BadCredentialsException ex) {
+        } catch (BadCredentialsException _) {
             log.warn("Échec d'authentification pour: {}", email);
             throw new InvalidCredentialsException();
         }
@@ -139,13 +139,13 @@ public class AuthServiceImpl implements AuthService {
         User user = oldRefreshToken.getUser();
 
         // Vérifier que l'utilisateur est toujours actif
-        if (!user.getEnabled()) {
+        if (Boolean.FALSE.equals(user.getEnabled())) {
             log.warn("Tentative de rafraîchissement pour un compte désactivé: {}", user.getEmail());
             refreshTokenService.revokeRefreshToken(request.getRefreshToken());
             throw new AccountDisabledException();
         }
 
-        if (!user.getAccountNonLocked()) {
+        if (Boolean.FALSE.equals(user.getAccountNonLocked())) {
             log.warn("Tentative de rafraîchissement pour un compte verrouillé: {}", user.getEmail());
             refreshTokenService.revokeRefreshToken(request.getRefreshToken());
             throw new AccountLockedException();
@@ -223,12 +223,12 @@ public class AuthServiceImpl implements AuthService {
                 return TokenValidationResponse.invalid("Utilisateur non trouvé");
             }
 
-            if (!user.getEnabled()) {
+            if (Boolean.FALSE.equals(user.getEnabled())) {
                 log.debug("Utilisateur désactivé: {}", email);
                 return TokenValidationResponse.invalid("Compte désactivé");
             }
 
-            if (!user.getAccountNonLocked()) {
+            if (Boolean.FALSE.equals(user.getAccountNonLocked())) {
                 log.debug("Utilisateur verrouillé: {}", email);
                 return TokenValidationResponse.invalid("Compte verrouillé");
             }

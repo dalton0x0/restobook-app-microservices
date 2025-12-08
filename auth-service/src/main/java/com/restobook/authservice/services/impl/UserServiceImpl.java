@@ -49,14 +49,13 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public UserResponse getUserById(Long id) {
         log.debug("Recherche de l'utilisateur par ID: {}", id);
 
         User user = userRepository.findById(id)
                 .orElseThrow(() -> {
                     log.debug("Utilisateur non trouvé avec l'ID: {}", id);
-                    return new ResourceNotFoundException("Utilisateur", "id", id);
+                    return new ResourceNotFoundException("id", id);
                 });
 
         log.debug("Utilisateur trouvé par ID: {}", user.getFullName());
@@ -72,7 +71,7 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> {
                     log.debug("Utilisateur non trouvé avec l'email: {}", email);
-                    return new ResourceNotFoundException("Utilisateur", "email", email);
+                    return new ResourceNotFoundException("email", email);
                 });
 
         log.debug("Utilisateur trouvé par email: {}", user.getFullName());
@@ -132,7 +131,7 @@ public class UserServiceImpl implements UserService {
                 .password(passwordEncoder.encode(request.getPassword()))
                 .phone(request.getPhone())
                 .role(role)
-                .enabled(request.getEnabled() != null ? request.getEnabled() : true)
+                .enabled(true)
                 .emailVerified(true)
                 .accountNonLocked(true)
                 .build();
@@ -149,7 +148,7 @@ public class UserServiceImpl implements UserService {
         log.info("Mise à jour de l'utilisateur ID: {}", id);
 
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Utilisateur", "id", id));
+                .orElseThrow(() -> new ResourceNotFoundException("id", id));
 
         if (request.getFirstName() != null && !request.getFirstName().isBlank()) {
             user.setFirstName(request.getFirstName());
@@ -160,11 +159,10 @@ public class UserServiceImpl implements UserService {
         }
 
         if (request.getPhone() != null) {
-            if (!request.getPhone().isBlank() && userRepository.existsByPhone(request.getPhone())) {
-                if (!request.getPhone().equals(user.getPhone())) {
+            if (!request.getPhone().isBlank() && userRepository.existsByPhone(request.getPhone()) && !request.getPhone().equals(user.getPhone())) {
                     throw new DuplicateResourceException("Utilisateur", "téléphone", request.getPhone());
                 }
-            }
+
             user.setPhone(request.getPhone());
         }
 
@@ -180,7 +178,7 @@ public class UserServiceImpl implements UserService {
         log.info("Mise à jour du rôle de l'utilisateur ID: {} vers: {}", id, request.getRoleName());
 
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Utilisateur", "id", id));
+                .orElseThrow(() -> new ResourceNotFoundException("id", id));
 
         Role newRole = roleRepository.findByName(request.getRoleName())
                 .orElseThrow(() -> new ResourceNotFoundException("Rôle", "nom", request.getRoleName()));
@@ -201,7 +199,7 @@ public class UserServiceImpl implements UserService {
         log.info("Activation de l'utilisateur ID: {}", id);
 
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Utilisateur", "id", id));
+                .orElseThrow(() -> new ResourceNotFoundException("id", id));
 
         user.setEnabled(true);
         User updatedUser = userRepository.save(user);
@@ -216,7 +214,7 @@ public class UserServiceImpl implements UserService {
         log.info("Désactivation de l'utilisateur ID: {}", id);
 
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Utilisateur", "id", id));
+                .orElseThrow(() -> new ResourceNotFoundException("id", id));
 
         user.setEnabled(false);
         User updatedUser = userRepository.save(user);
@@ -234,7 +232,7 @@ public class UserServiceImpl implements UserService {
         log.info("Suppression de l'utilisateur ID: {}", id);
 
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Utilisateur", "id", id));
+                .orElseThrow(() -> new ResourceNotFoundException("id", id));
 
         // Révoquer tous les tokens avant la suppression
         refreshTokenService.revokeAllUserTokens(id);
@@ -259,7 +257,7 @@ public class UserServiceImpl implements UserService {
         log.info("Mise à jour du profil utilisateur ID: {}", userId);
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Utilisateur", "id", userId));
+                .orElseThrow(() -> new ResourceNotFoundException("id", userId));
 
         if (request.getFirstName() != null && !request.getFirstName().isBlank()) {
             user.setFirstName(request.getFirstName());
@@ -292,7 +290,7 @@ public class UserServiceImpl implements UserService {
         log.info("Changement de mot de passe pour l'utilisateur ID: {}", userId);
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Utilisateur", "id", userId));
+                .orElseThrow(() -> new ResourceNotFoundException("id", userId));
 
         // Vérifier l'ancien mot de passe
         if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
@@ -321,7 +319,6 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public boolean existsByEmail(String email) {
         return userRepository.existsByEmail(email);
     }

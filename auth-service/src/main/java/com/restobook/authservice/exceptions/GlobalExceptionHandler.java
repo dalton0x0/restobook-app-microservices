@@ -17,7 +17,6 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 @RestControllerAdvice
@@ -120,7 +119,7 @@ public class GlobalExceptionHandler {
                         .message(error.getDefaultMessage())
                         .rejectedValue(error.getRejectedValue())
                         .build())
-                .collect(Collectors.toList());
+                .toList();
 
         log.warn("Validation error: {} fields invalid - Path: {}", fieldErrors.size(), request.getRequestURI());
 
@@ -182,6 +181,23 @@ public class GlobalExceptionHandler {
                 HttpStatus.UNAUTHORIZED.getReasonPhrase(),
                 "Erreur d'authentification",
                 "AUTHENTICATION_ERROR",
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+    }
+
+    @ExceptionHandler(SecurityException.class)
+    public ResponseEntity<@NonNull ErrorResponse> handleSecurityException(
+            AuthenticationException ex, HttpServletRequest request) {
+
+        log.warn("Security error: {} - Path: {}", ex.getMessage(), request.getRequestURI());
+
+        ErrorResponse errorResponse = ErrorResponse.of(
+                HttpStatus.UNAUTHORIZED.value(),
+                HttpStatus.UNAUTHORIZED.getReasonPhrase(),
+                "Problème de sécurité",
+                "SECURITY_ERROR",
                 request.getRequestURI()
         );
 

@@ -64,7 +64,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
         }
 
         // Vérifier si le token est révoqué
-        if (refreshToken.getRevoked()) {
+        if (Boolean.TRUE.equals(refreshToken.getRevoked())) {
             log.warn("Tentative d'utilisation d'un refresh token révoqué pour l'utilisateur: {}",
                     refreshToken.getUser().getEmail());
             throw new InvalidTokenException("Ce refresh token a été révoqué. Veuillez vous reconnecter.");
@@ -98,7 +98,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
                 });
 
         // Vérifier si déjà révoqué
-        if (refreshToken.getRevoked()) {
+        if (Boolean.TRUE.equals(refreshToken.getRevoked())) {
             log.debug("Token déjà révoqué, aucune action nécessaire");
             return;
         }
