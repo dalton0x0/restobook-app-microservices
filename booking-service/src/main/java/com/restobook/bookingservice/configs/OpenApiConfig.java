@@ -1,0 +1,42 @@
+package com.restobook.bookingservice.configs;
+
+import io.swagger.v3.oas.models.Components;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Contact;
+import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.info.License;
+import io.swagger.v3.oas.models.security.SecurityRequirement;
+import io.swagger.v3.oas.models.security.SecurityScheme;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class OpenApiConfig {
+
+    @Bean
+    public OpenAPI customOpenAPI() {
+        final String securitySchemeName = "bearerAuth";
+
+        return new OpenAPI()
+                .info(new Info()
+                        .title("Booking Service API")
+                        .description("Service API de gestion des réservations pour RestoBook QuickEat")
+                        .version("1.0.0")
+                        .contact(new Contact()
+                                .name("QuickEat Development Team")
+                                .email("dev@example.fr")
+                                .url("https://www.cheridanh.cg"))
+                        .license(new License()
+                                .name("Propriétaire")
+                                .url("https://www.example.com")))
+                .addSecurityItem(new SecurityRequirement().addList(securitySchemeName))
+                .components(new Components()
+                        .addSecuritySchemes(securitySchemeName,
+                                new SecurityScheme()
+                                        .name(securitySchemeName)
+                                        .type(SecurityScheme.Type.HTTP)
+                                        .scheme("bearer")
+                                        .bearerFormat("JWT")
+                                        .description("Entrez votre token JWT obtenu via le auth service")));
+    }
+}
