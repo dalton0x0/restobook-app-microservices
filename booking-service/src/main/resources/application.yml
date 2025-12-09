@@ -1,0 +1,85 @@
+# BOOKING SERVICE
+
+# Spring Configuration
+spring:
+  # Environment Variables Configuration
+  config:
+    import: optional:file:.env.properties
+
+  # Application Configuration
+  application:
+    name: booking-service
+
+  # Database Configuration
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:booking_db}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # JPA Configuration
+  jpa:
+    hibernate:
+      ddl-auto: ${JPA_DDL_AUTO:update}
+    show-sql: ${JPA_SHOW_SQL:false}
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+    open-in-view: false
+
+# Server Configuration
+server:
+  port: ${BOOKING_SERVICE_PORT:8083}
+
+# Services Configuration
+services:
+  auth-service:
+    url: ${AUTH_SERVICE_URL:http://localhost:8081}
+  restaurant-service:
+    url: ${RESTAURANT_SERVICE_URL:http://localhost:8082}
+
+# Booking Configuration
+booking:
+  # Durée d'une réservation en minutes
+  duration-minutes: ${BOOKING_DURATION_MINUTES:90}
+  # Intervalle entre les créneaux en minutes
+  slot-interval-minutes: ${BOOKING_SLOT_INTERVAL_MINUTES:30}
+  # Nombre max de personnes par réservation
+  max-party-size: ${BOOKING_MAX_PARTY_SIZE:8}
+  # Nombre min de personnes par réservation
+  min-party-size: ${BOOKING_MIN_PARTY_SIZE:1}
+  # Jours à l'avance pour réserver (max)
+  max-days-advance: ${BOOKING_MAX_DAYS_ADVANCE:7}
+  # Heures avant annulation gratuite
+  cancellation-hours: ${BOOKING_CANCELLATION_HOURS:2}
+
+# Logging Configuration
+logging:
+  level:
+    root: ${LOG_LEVEL_ROOT:INFO}
+    com.restobook.bookingservice: ${LOG_LEVEL_APP:DEBUG}
+    org.hibernate.SQL: ${LOG_LEVEL_SQL:DEBUG}
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: ${LOG_FILE_PATH:logs/booking-service.log}
+
+# Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when_authorized
+
+# OpenAPI Configuration
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: ${SWAGGER_ENABLED:true}
