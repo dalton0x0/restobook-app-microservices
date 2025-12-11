@@ -1,0 +1,83 @@
+# REVIEW SERVICE
+
+# Spring Configuration
+spring:
+  # Environnement Variables Configuration
+  config:
+    import: optional:file:.env.properties
+
+  # Application Configuration
+  application:
+    name: review-service
+
+  # Database Configuration
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:review_db}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # JPA Configuration
+  jpa:
+    hibernate:
+      ddl-auto: ${JPA_DDL_AUTO:update}
+    show-sql: ${JPA_SHOW_SQL:false}
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+    open-in-view: false
+
+# Server Configuration
+server:
+  port: ${REVIEW_SERVICE_PORT:8084}
+
+# Services Configuration (pour les appels inter-services)
+services:
+  auth-service:
+    url: ${AUTH_SERVICE_URL:http://localhost:8081}
+  restaurant-service:
+    url: ${RESTAURANT_SERVICE_URL:http://localhost:8082}
+  booking-service:
+    url: ${BOOKING_SERVICE_URL:http://localhost:8083}
+
+# Review Configuration
+review:
+  # Note minimale
+  min-rating: ${REVIEW_MIN_RATING:1}
+  # Note maximale
+  max-rating: ${REVIEW_MAX_RATING:5}
+  # Longueur minimale du commentaire (0 = optionnel)
+  min-comment-length: ${REVIEW_MIN_COMMENT_LENGTH:0}
+  # Longueur maximale du commentaire
+  max-comment-length: ${REVIEW_MAX_COMMENT_LENGTH:1000}
+
+# Logging Configuration
+logging:
+  level:
+    root: ${LOG_LEVEL_ROOT:INFO}
+    com.restobook.reviewservice: ${LOG_LEVEL_APP:DEBUG}
+    org.hibernate.SQL: ${LOG_LEVEL_SQL:DEBUG}
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: ${LOG_FILE_PATH:logs/review-service.log}
+
+# Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+
+# OpenAPI Configuration
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: ${SWAGGER_ENABLED:true}
