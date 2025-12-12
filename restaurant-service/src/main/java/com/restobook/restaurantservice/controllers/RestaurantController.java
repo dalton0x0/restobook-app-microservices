@@ -1,6 +1,7 @@
 package com.restobook.restaurantservice.controllers;
 
 import com.restobook.restaurantservice.clients.AuthServiceClient;
+import com.restobook.restaurantservice.constants.AuthenticationConst;
 import com.restobook.restaurantservice.dtos.request.CreateRestaurantRequest;
 import com.restobook.restaurantservice.dtos.request.OpeningHoursRequest;
 import com.restobook.restaurantservice.dtos.request.UpdateRestaurantRequest;
@@ -136,7 +137,7 @@ public class RestaurantController {
     @Operation(summary = "Créer un restaurant", description = "Réservé aux OWNER et ADMIN")
     public ResponseEntity<@NonNull ApiResponse<RestaurantResponse>> createRestaurant(
             @Valid @RequestBody CreateRestaurantRequest request,
-            @RequestHeader("Authorization") String authHeader) {
+            @RequestHeader(AuthenticationConst.AUTH_HEADER) String authHeader) {
 
         TokenValidationResponse tokenInfo = validateToken(authHeader);
         log.debug("Requête HTTP POST /restaurants - Utilisateur: {}", tokenInfo.getEmail());
@@ -150,7 +151,7 @@ public class RestaurantController {
     public ResponseEntity<@NonNull ApiResponse<RestaurantResponse>> updateRestaurant(
             @PathVariable Long id,
             @Valid @RequestBody UpdateRestaurantRequest request,
-            @RequestHeader("Authorization") String authHeader) {
+            @RequestHeader(AuthenticationConst.AUTH_HEADER) String authHeader) {
 
         TokenValidationResponse tokenInfo = validateToken(authHeader);
         log.debug("Requête HTTP PUT /restaurants/{} - Utilisateur: {}", id, tokenInfo.getEmail());
@@ -163,7 +164,7 @@ public class RestaurantController {
     public ResponseEntity<@NonNull ApiResponse<List<OpeningHoursResponse>>> updateOpeningHours(
             @PathVariable Long id,
             @Valid @RequestBody List<OpeningHoursRequest> requests,
-            @RequestHeader("Authorization") String authHeader) {
+            @RequestHeader(AuthenticationConst.AUTH_HEADER) String authHeader) {
 
         TokenValidationResponse tokenInfo = validateToken(authHeader);
         log.debug("Requête HTTP PUT /restaurants/{}/opening-hours - Utilisateur: {}", id, tokenInfo.getEmail());
@@ -175,7 +176,7 @@ public class RestaurantController {
     @Operation(summary = "Activer un restaurant")
     public ResponseEntity<@NonNull ApiResponse<RestaurantResponse>> activateRestaurant(
             @PathVariable Long id,
-            @RequestHeader("Authorization") String authHeader) {
+            @RequestHeader(AuthenticationConst.AUTH_HEADER) String authHeader) {
 
         TokenValidationResponse tokenInfo = validateToken(authHeader);
         log.debug("Requête HTTP PATCH /restaurants/{}/activate - Utilisateur: {}", id, tokenInfo.getEmail());
@@ -187,7 +188,7 @@ public class RestaurantController {
     @Operation(summary = "Désactiver un restaurant")
     public ResponseEntity<@NonNull ApiResponse<RestaurantResponse>> deactivateRestaurant(
             @PathVariable Long id,
-            @RequestHeader("Authorization") String authHeader) {
+            @RequestHeader(AuthenticationConst.AUTH_HEADER) String authHeader) {
 
         TokenValidationResponse tokenInfo = validateToken(authHeader);
         log.debug("Requête HTTP PATCH /restaurants/{}/deactivate - Utilisateur: {}", id, tokenInfo.getEmail());
@@ -199,7 +200,7 @@ public class RestaurantController {
     @Operation(summary = "Supprimer un restaurant")
     public ResponseEntity<@NonNull ApiResponse<Void>> deleteRestaurant(
             @PathVariable Long id,
-            @RequestHeader("Authorization") String authHeader) {
+            @RequestHeader(AuthenticationConst.AUTH_HEADER) String authHeader) {
 
         TokenValidationResponse tokenInfo = validateToken(authHeader);
         log.debug("Requête HTTP DELETE /restaurants/{} - Utilisateur: {}", id, tokenInfo.getEmail());
@@ -210,7 +211,7 @@ public class RestaurantController {
     @GetMapping("/my-restaurants")
     @Operation(summary = "Mes restaurants", description = "Liste des restaurants du propriétaire connecté")
     public ResponseEntity<@NonNull ApiResponse<PageResponse<RestaurantResponse>>> getMyRestaurants(
-            @RequestHeader("Authorization") String authHeader,
+            @RequestHeader(AuthenticationConst.AUTH_HEADER) String authHeader,
             @PageableDefault Pageable pageable) {
 
         TokenValidationResponse tokenInfo = validateToken(authHeader);
@@ -220,7 +221,7 @@ public class RestaurantController {
     }
 
     private TokenValidationResponse validateToken(String authHeader) {
-        String token = authHeader.replace("Bearer ", "");
+        String token = authHeader.replace(AuthenticationConst.TOKEN_PREFIX, "");
         return authServiceClient.validateToken(token);
     }
 }

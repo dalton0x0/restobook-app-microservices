@@ -1,6 +1,7 @@
 package com.restobook.restaurantservice.controllers;
 
 import com.restobook.restaurantservice.clients.AuthServiceClient;
+import com.restobook.restaurantservice.constants.AuthenticationConst;
 import com.restobook.restaurantservice.dtos.request.CreateMenuItemRequest;
 import com.restobook.restaurantservice.dtos.request.UpdateMenuItemRequest;
 import com.restobook.restaurantservice.dtos.response.ApiResponse;
@@ -112,7 +113,7 @@ public class MenuItemController {
     public ResponseEntity<@NonNull ApiResponse<MenuItemResponse>> createMenuItem(
             @PathVariable Long restaurantId,
             @Valid @RequestBody CreateMenuItemRequest request,
-            @RequestHeader("Authorization") String authHeader) {
+            @RequestHeader(AuthenticationConst.AUTH_HEADER) String authHeader) {
 
         TokenValidationResponse tokenInfo = validateToken(authHeader);
         log.debug("Requête HTTP POST /restaurants/{}/menu - Utilisateur: {}", restaurantId, tokenInfo.getEmail());
@@ -127,7 +128,7 @@ public class MenuItemController {
             @PathVariable Long restaurantId,
             @PathVariable Long itemId,
             @Valid @RequestBody UpdateMenuItemRequest request,
-            @RequestHeader("Authorization") String authHeader) {
+            @RequestHeader(AuthenticationConst.AUTH_HEADER) String authHeader) {
 
         TokenValidationResponse tokenInfo = validateToken(authHeader);
         log.debug("Requête HTTP PUT /restaurants/{}/menu/{} - Utilisateur: {}", restaurantId, itemId, tokenInfo.getEmail());
@@ -140,7 +141,7 @@ public class MenuItemController {
     public ResponseEntity<@NonNull ApiResponse<MenuItemResponse>> toggleAvailability(
             @PathVariable Long restaurantId,
             @PathVariable Long itemId,
-            @RequestHeader("Authorization") String authHeader) {
+            @RequestHeader(AuthenticationConst.AUTH_HEADER) String authHeader) {
 
         TokenValidationResponse tokenInfo = validateToken(authHeader);
         log.debug("Requête HTTP PATCH /restaurants/{}/menu/{}/toggle-availability - Utilisateur: {}", restaurantId, itemId, tokenInfo.getEmail());
@@ -153,7 +154,7 @@ public class MenuItemController {
     public ResponseEntity<@NonNull ApiResponse<Void>> deleteMenuItem(
             @PathVariable Long restaurantId,
             @PathVariable Long itemId,
-            @RequestHeader("Authorization") String authHeader) {
+            @RequestHeader(AuthenticationConst.AUTH_HEADER) String authHeader) {
 
         TokenValidationResponse tokenInfo = validateToken(authHeader);
         log.debug("Requête HTTP DELETE /restaurants/{}/menu/{} - Utilisateur: {}", restaurantId, itemId, tokenInfo.getEmail());
@@ -162,7 +163,7 @@ public class MenuItemController {
     }
 
     private TokenValidationResponse validateToken(String authHeader) {
-        String token = authHeader.replace("Bearer ", "");
+        String token = authHeader.replace(AuthenticationConst.TOKEN_PREFIX, "");
         return authServiceClient.validateToken(token);
     }
 }
