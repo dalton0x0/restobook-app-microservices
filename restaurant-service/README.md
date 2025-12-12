@@ -130,7 +130,7 @@ mvn spring-boot:run
 ## Healthcheck
 
 ```bash
-curl http://localhost:8081/actuator/health
+curl http://localhost:8082/actuator/health
 ```
 
 ## Communication Inter-Services
