@@ -1,5 +1,6 @@
 package com.restobook.restaurantservice.exceptions;
 
+import com.restobook.restaurantservice.constants.ExceptionConst;
 import com.restobook.restaurantservice.dtos.response.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.NonNull;
@@ -109,7 +110,7 @@ public class GlobalExceptionHandler {
                 HttpStatus.NOT_FOUND.value(),
                 HttpStatus.NOT_FOUND.getReasonPhrase(),
                 "La ressource demandée n'existe pas",
-                "RESOURCE_NOT_FOUND",
+                ExceptionConst.RESOURCE_NOT_FOUND,
                 request.getRequestURI()
         );
 
@@ -126,7 +127,7 @@ public class GlobalExceptionHandler {
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(),
                 "Une erreur inattendue s'est produite. Veuillez réessayer plus tard.",
-                "INTERNAL_ERROR",
+                ExceptionConst.INTERNAL_ERROR,
                 request.getRequestURI()
         );
 

@@ -221,7 +221,6 @@ public class RestaurantServiceImpl implements RestaurantService {
         );
 
         checkPermission(restaurant, userId, role);
-
         openingHourRepository.deleteByRestaurantId(restaurantId);
         saveOpeningHours(restaurant, requests);
         log.info("Horaires d'ouverture mis à jour pour le restaurant: {}", restaurant.getName());
@@ -259,8 +258,8 @@ public class RestaurantServiceImpl implements RestaurantService {
 
         restaurant.setActive(false);
         Restaurant savedRestaurant = restaurantRepository.save(restaurant);
-
         log.info("Restaurant désactivé: {}", savedRestaurant.getName());
+
         return RestaurantResponse.fromEntity(savedRestaurant);
     }
 
@@ -312,11 +311,8 @@ public class RestaurantServiceImpl implements RestaurantService {
     @Transactional(readOnly = true)
     public boolean isRestaurantOpen(Long id, DayOfWeek dayOfWeek, LocalTime time) {
         log.debug("Vérification des heures d'ouverture du restaurant ID: {} - {} à {}", id, dayOfWeek, time);
-
         DayOfWeek day = DayOfWeek.valueOf(dayOfWeek.name());
-
         Optional<OpeningHour> hour = openingHourRepository.findByRestaurantIdAndDayOfWeek(id, day);
-
         return hour.map(h -> h.isOpenAt(time)).orElse(false);
     }
 

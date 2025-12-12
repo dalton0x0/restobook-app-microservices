@@ -1,5 +1,6 @@
 package com.restobook.restaurantservice.exceptions;
 
+import com.restobook.restaurantservice.constants.ExceptionConst;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
@@ -16,6 +17,6 @@ public class BusinessException extends RuntimeException{
     }
 
     public BusinessException(String message, HttpStatus status) {
-        this(message, status, "BUSINESS_ERROR");
+        this(message, status, ExceptionConst.BUSINESS_ERROR);
     }
 }
