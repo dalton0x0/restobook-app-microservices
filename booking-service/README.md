@@ -28,9 +28,9 @@ Ce microservice gère :
 
 ## Base de données
 
-| Table        | Description  |
-|--------------|--------------|
-| `booking_db` | Réservations |
+| Table      | Description  |
+|------------|--------------|
+| `bookings` | Réservations |
 
 ## Règles métier
 
