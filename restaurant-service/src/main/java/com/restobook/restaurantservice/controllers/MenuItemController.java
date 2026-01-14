@@ -25,6 +25,7 @@ import java.util.List;
 @RestController
 @RequestMapping("api/v1/restaurants/{restaurantId}/menu")
 @RequiredArgsConstructor
+@CrossOrigin(origins = "*")
 @Tag(name = "Menu", description = "Gestion des menus des restaurants")
 public class MenuItemController {
 

@@ -141,10 +141,19 @@ public class RestaurantServiceImpl implements RestaurantService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<@NonNull RestaurantResponse> getAllRestaurants(Pageable pageable) {
+    public Page<@NonNull RestaurantResponse> getAllActiveRestaurants(Pageable pageable) {
         log.debug("Récupération de tous les restaurants actifs - Page: {}, Taille: {}",
                 pageable.getPageNumber(), pageable.getPageSize());
         return restaurantRepository.findByActiveTrue(pageable)
+                .map(RestaurantResponse::fromEntity);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<@NonNull RestaurantResponse> getAllRestaurants(Pageable pageable) {
+        log.debug("Récupération de tous les restaurants actifs et non actifs - Page: {}, Taille: {}",
+                pageable.getPageNumber(), pageable.getPageSize());
+        return restaurantRepository.findAll(pageable)
                 .map(RestaurantResponse::fromEntity);
     }
 
@@ -206,6 +215,21 @@ public class RestaurantServiceImpl implements RestaurantService {
         }
 
         return openingHourRepository.findByRestaurantIdOrderByDayOfWeek(restaurantId)
+                .stream()
+                .map(OpeningHoursResponse::fromEntity)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<OpeningHoursResponse> getOpeningHoursByDayOfWeek(Long restaurantId, DayOfWeek dayOfWeek) {
+        log.debug("Récupération des horaires du restaurant ID: {} pour: {}", restaurantId, dayOfWeek);
+
+        if (!restaurantRepository.existsById(restaurantId)) {
+            throw new ResourceNotFoundException("id", restaurantId);
+        }
+
+        return openingHourRepository.findAllByRestaurantIdAndDayOfWeek(restaurantId, dayOfWeek)
                 .stream()
                 .map(OpeningHoursResponse::fromEntity)
                 .toList();
@@ -311,8 +335,7 @@ public class RestaurantServiceImpl implements RestaurantService {
     @Transactional(readOnly = true)
     public boolean isRestaurantOpen(Long id, DayOfWeek dayOfWeek, LocalTime time) {
         log.debug("Vérification des heures d'ouverture du restaurant ID: {} - {} à {}", id, dayOfWeek, time);
-        DayOfWeek day = DayOfWeek.valueOf(dayOfWeek.name());
-        Optional<OpeningHour> hour = openingHourRepository.findByRestaurantIdAndDayOfWeek(id, day);
+        Optional<OpeningHour> hour = openingHourRepository.findByRestaurantIdAndDayOfWeek(id, dayOfWeek);
         return hour.map(h -> h.isOpenAt(time)).orElse(false);
     }
 

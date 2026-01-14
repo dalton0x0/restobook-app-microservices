@@ -1,6 +1,11 @@
 package com.restobook.bookingservice.dtos.response;
 
-import lombok.*;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -19,9 +24,12 @@ public class TimeSlotResponse {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class AvailableSlot {
+        @JsonFormat(pattern = "HH:mm")
         private LocalTime time;
         private Integer availableCapacity;
         private Boolean available;
+        private Boolean isNextDay;
     }
 }

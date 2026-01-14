@@ -1,6 +1,7 @@
 package com.restobook.restaurantservice.controllers;
 
 import com.restobook.restaurantservice.dtos.response.ApiResponse;
+import com.restobook.restaurantservice.dtos.response.OpeningHoursResponse;
 import com.restobook.restaurantservice.dtos.response.RestaurantResponse;
 import com.restobook.restaurantservice.enums.DayOfWeek;
 import com.restobook.restaurantservice.services.RestaurantService;
@@ -13,11 +14,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalTime;
+import java.util.List;
 
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/internal")
 @RequiredArgsConstructor
+@CrossOrigin(origins = "*")
 @Tag(name = "Internal", description = "Endpoints internes pour la communication inter-services")
 public class InternalController {
 
@@ -57,6 +60,18 @@ public class InternalController {
         log.debug("Requête HTTP GET /internal/restaurants/{}/is-open - {} à {} - Requête inter-service", id, dayOfWeek, time);
         boolean isOpen = restaurantService.isRestaurantOpen(id, dayOfWeek, time);
         return ResponseEntity.ok(isOpen);
+    }
+
+    @GetMapping("/restaurants/{id}/opening-hours")
+    @Operation(summary = "Récupérer les horaires d'ouverture pour un jour donné",
+            description = "Utilisé par le Booking Service pour générer les créneaux disponibles")
+    public ResponseEntity<@NonNull List<OpeningHoursResponse>> getOpeningHoursByDay(
+            @PathVariable Long id,
+            @RequestParam DayOfWeek dayOfWeek) {
+
+        log.debug("Requête HTTP GET /internal/restaurants/{}/opening-hours - {} - Requête inter-service", id, dayOfWeek);
+        List<OpeningHoursResponse> hours = restaurantService.getOpeningHoursByDayOfWeek(id, dayOfWeek);
+        return ResponseEntity.ok(hours);
     }
 
     @PutMapping("/restaurants/{id}/rating")

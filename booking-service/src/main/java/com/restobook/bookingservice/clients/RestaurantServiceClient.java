@@ -1,10 +1,13 @@
 package com.restobook.bookingservice.clients;
 
 import com.restobook.bookingservice.exceptions.ResourceNotFoundException;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -12,6 +15,8 @@ import reactor.core.publisher.Mono;
 
 import java.time.DayOfWeek;
 import java.time.LocalTime;
+import java.util.Collections;
+import java.util.List;
 
 @Slf4j
 @Component
@@ -84,6 +89,28 @@ public class RestaurantServiceClient {
         }
     }
 
+    public List<OpeningHoursInfo> getOpeningHours(Long restaurantId, DayOfWeek dayOfWeek) {
+        log.debug("Récupération des horaires du restaurant ID: {} pour {}", restaurantId, dayOfWeek);
+
+        try {
+            List<OpeningHoursInfo> hours = webClient.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/api/v1/internal/restaurants/{id}/opening-hours")
+                            .queryParam("dayOfWeek", dayOfWeek.name())
+                            .build(restaurantId))
+                    .retrieve()
+                    .onStatus(HttpStatusCode::isError, response ->
+                            Mono.error(new RuntimeException("Erreur lors de la récupération des horaires")))
+                    .bodyToMono(new ParameterizedTypeReference<List<OpeningHoursInfo>>() {})
+                    .block();
+
+            return hours != null ? hours : Collections.emptyList();
+        } catch (Exception e) {
+            log.error("Erreur lors de la récupération des horaires du restaurant ID: {}: {}", restaurantId, e.getMessage());
+            return Collections.emptyList();
+        }
+    }
+
     public RestaurantInfo getRestaurantInfo(Long restaurantId) {
         log.debug("Récupération des informations du restaurant ID: {}", restaurantId);
 
@@ -100,7 +127,7 @@ public class RestaurantServiceClient {
             throw new ResourceNotFoundException("Restaurant", "id", restaurantId);
         }
     }
-
+    
     @Data
     @NoArgsConstructor
     public static class RestaurantInfo {
@@ -111,5 +138,39 @@ public class RestaurantServiceClient {
         private Integer totalCapacity;
         private Long ownerId;
         private Boolean active;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class OpeningHoursInfo {
+        private Long id;
+        private String dayOfWeek;
+        private LocalTime openingTimeMorning;
+        private LocalTime closingTimeMorning;
+        private LocalTime openingTimeEvening;
+        private LocalTime closingTimeEvening;
+        private Boolean closed;
+
+        // Vérifie si les horaires du matin correspondent à un "after" (continuation de la nuit)
+        // Ex: 00:00 - 06:00 indique que le restaurant ferme après minuit
+        public boolean isMorningAfterMidnight() {
+            if (openingTimeMorning == null || closingTimeMorning == null) {
+                return false;
+            }
+            // Si l'heure d'ouverture du matin est très tôt (avant 8h), c'est probablement un "after"
+            return openingTimeMorning.getHour() < 8;
+        }
+
+        // Vérifie si les horaires du soir traversent minuit
+        // Ex: 22:00 - 02:00 (closingTimeEvening < openingTimeEvening)
+        public boolean isEveningCrossingMidnight() {
+            if (openingTimeEvening == null || closingTimeEvening == null) {
+                return false;
+            }
+            // Si l'heure de fermeture du soir est avant l'heure d'ouverture, ça traverse minuit
+            return closingTimeEvening.isBefore(openingTimeEvening);
+        }
     }
 }

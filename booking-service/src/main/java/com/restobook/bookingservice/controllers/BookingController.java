@@ -29,6 +29,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/bookings")
 @RequiredArgsConstructor
+@CrossOrigin(origins = "*")
 @Tag(name = "Bookings", description = "Gestion des réservations")
 public class BookingController {
 

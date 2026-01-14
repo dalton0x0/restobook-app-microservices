@@ -27,6 +27,7 @@ import java.util.List;
 @RestController
 @RequestMapping("api/v1/restaurants")
 @RequiredArgsConstructor
+@CrossOrigin(origins = "*")
 @Tag(name = "Restaurants", description = "Gestion des restaurants")
 public class RestaurantController {
 
@@ -36,11 +37,24 @@ public class RestaurantController {
     // Endpoints publiques
 
     @GetMapping
-    @Operation(summary = "Lister les restaurants", description = "Récupère la liste paginée des restaurants actifs")
-    public ResponseEntity<@NonNull ApiResponse<PageResponse<RestaurantResponse>>> getAllRestaurants(
+    @Operation(summary = "Lister les restaurants actifs", description = "Récupère la liste paginée des restaurants actifs")
+    public ResponseEntity<@NonNull ApiResponse<PageResponse<RestaurantResponse>>> getAllActiveRestaurants(
             @PageableDefault(sort = "name", direction = Sort.Direction.ASC) Pageable pageable) {
 
         log.debug("Requête HTTP GET /restaurants - Page: {}, Taille: {}", pageable.getPageNumber(), pageable.getPageSize());
+        Page<@NonNull RestaurantResponse> restaurants = restaurantService.getAllActiveRestaurants(pageable);
+        return ResponseEntity.ok(ApiResponse.success(PageResponse.of(restaurants)));
+    }
+
+    @GetMapping("/all")
+    @Operation(summary = "Lister les restaurants actifs et non actifs", description = "Récupère la liste paginée des restaurants actifs et non actifs")
+    public ResponseEntity<@NonNull ApiResponse<PageResponse<RestaurantResponse>>> getAllRestaurants(
+            @PageableDefault(sort = "name", direction = Sort.Direction.ASC) Pageable pageable,
+            @RequestHeader(AuthenticationConst.AUTH_HEADER) String authHeader) {
+
+        TokenValidationResponse tokenInfo = validateToken(authHeader);
+        log.debug("Requête HTTP GET /restaurants/all - Page: {}, Taille: {}", pageable.getPageNumber(), pageable.getPageSize());
+        log.debug("Requête HTTP POST /restaurants/all - Utilisateur: {}", tokenInfo.getEmail());
         Page<@NonNull RestaurantResponse> restaurants = restaurantService.getAllRestaurants(pageable);
         return ResponseEntity.ok(ApiResponse.success(PageResponse.of(restaurants)));
     }

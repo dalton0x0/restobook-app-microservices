@@ -48,14 +48,32 @@ public class OpeningHour {
     private Restaurant restaurant;
 
     public boolean isOpenAt(LocalTime time) {
-        if (Boolean.TRUE.equals(closed)) return false;
+        if (Boolean.TRUE.equals(closed)) {
+            return false;
+        }
 
-        boolean openMorning = openingTimeMorning != null && closingTimeMorning != null
-                && time.isAfter(openingTimeMorning) && !time.isAfter(closingTimeMorning);
+        // Vérifier les horaires du matin
+        boolean openMorning = isTimeInRange(time, openingTimeMorning, closingTimeMorning);
 
-        boolean openEvening = openingTimeEvening != null && closingTimeEvening != null
-                && time.isAfter(openingTimeEvening) && !time.isAfter(closingTimeEvening);
+        // Vérifier les horaires du soir
+        boolean openEvening = isTimeInRange(time, openingTimeEvening, closingTimeEvening);
 
         return openMorning || openEvening;
+    }
+
+    private boolean isTimeInRange(LocalTime time, LocalTime start, LocalTime end) {
+        if (start == null || end == null) {
+            return false;
+        }
+
+        // Cas normal : start < end (ex: 09:00 - 14:00)
+        if (!end.isBefore(start)) {
+            // L'heure doit être >= start ET <= end
+            return !time.isBefore(start) && !time.isAfter(end);
+        }
+
+        // Cas où la plage traverse minuit (ex: 22:00 - 06:00)
+        // L'heure est valide si elle est >= start OU <= end
+        return !time.isBefore(start) || !time.isAfter(end);
     }
 }

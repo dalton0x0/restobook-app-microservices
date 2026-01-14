@@ -18,6 +18,11 @@ public interface RestaurantService {
     /**
      * Liste tous les restaurants actifs avec pagination
      */
+    Page<@NonNull RestaurantResponse> getAllActiveRestaurants(Pageable pageable);
+
+    /**
+     * Liste tous les restaurants actifs et non actifs avec pagination
+     */
     Page<@NonNull RestaurantResponse> getAllRestaurants(Pageable pageable);
 
     /**
@@ -44,6 +49,12 @@ public interface RestaurantService {
      * Récupère les horaires d'ouverture d'un restaurant
      */
     List<OpeningHoursResponse> getOpeningHours(Long restaurantId);
+
+    /**
+     * Récupère les horaires d'ouverture d'un restaurant pour un jour spécifique.
+     * Utilisé par le Booking Service pour générer les créneaux disponibles.
+     */
+    List<OpeningHoursResponse> getOpeningHoursByDayOfWeek(Long restaurantId, DayOfWeek dayOfWeek);
 
     /**
      * Liste toutes les villes où des restaurants sont présents

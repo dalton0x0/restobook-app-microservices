@@ -194,7 +194,7 @@ public class BookingServiceImpl implements BookingService {
     @Override
     @Transactional
     public BookingResponse cancelBooking(Long id, CancelBookingRequest request, Long userId, String role) {
-        log.info("Annulation de la réservation {} par l'utilisateur {}", id, userId);
+        log.info("Annulation de la réservation ID: {} par l'utilisateur ID: {}", id, userId);
 
         Booking booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("id", id));
@@ -202,44 +202,46 @@ public class BookingServiceImpl implements BookingService {
         checkBookingAccess(booking, userId, role);
 
         if (!booking.canBeCancelled()) {
-            throw BookingException.cannotCancelBooking();
+            throw new BookingException("Cette réservation ne peut plus être annulée");
         }
 
-        // Vérifier le délai d'annulation sauf pour admin/staff
-        if (!isStaffOrAdmin(role)) {
-            LocalDateTime bookingDateTime = LocalDateTime.of(booking.getBookingDate(), booking.getBookingTime());
-            LocalDateTime cancellationDeadline = bookingDateTime.minusHours(bookingProperties.getCancellationHours());
+        // Vérifier le délai d'annulation (2h avant)
+        LocalDateTime bookingDateTime = LocalDateTime.of(booking.getBookingDate(), booking.getBookingTime());
+        LocalDateTime cancellationLimit = bookingDateTime.minusHours(bookingProperties.getCancellationHours());
 
-            if (LocalDateTime.now().isAfter(cancellationDeadline)) {
-                throw BookingException.cancellationTooLate(bookingProperties.getCancellationHours());
-            }
+        if (LocalDateTime.now().isAfter(cancellationLimit) && !isStaffOrAdmin(role)) {
+            throw new BookingException("L'annulation n'est plus possible moins de " +
+                    bookingProperties.getCancellationHours() + " heures avant le créneau");
         }
 
         booking.setStatus(BookingStatus.CANCELLED);
-        booking.setCancellationReason(request != null ? request.getReason() : null);
+        if (request != null && request.getReason() != null) {
+            booking.setCancellationReason(request.getReason());
+        }
         booking.setCancelledAt(LocalDateTime.now());
-        Booking cancelledBooking = bookingRepository.save(booking);
-        log.info("Réservation annulée: {}", id);
 
-        return enrichBookingResponse(cancelledBooking);
+        Booking cancelledBooking = bookingRepository.save(booking);
+        log.info("Réservation annulée: {}", cancelledBooking.getBookingReference());
+
+        return BookingResponse.fromEntity(cancelledBooking);
     }
 
-    // Recherche
+    // Listes utilisateur
 
     @Override
     @Transactional(readOnly = true)
     public Page<BookingResponse> getBookingsByUser(Long userId, Pageable pageable) {
         log.debug("Récupération des réservations de l'utilisateur ID: {}", userId);
         return bookingRepository.findByUserIdOrderByBookingDateDescBookingTimeDesc(userId, pageable)
-                .map(this::enrichBookingResponse);
+                .map(BookingResponse::fromEntity);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<BookingResponse> getBookingsByUserAndStatus(Long userId, BookingStatus status, Pageable pageable) {
-        log.debug("Récupération des réservations de l'utilisateur ID: {} avec le statut: {}", userId, status);
+        log.debug("Récupération des réservations de l'utilisateur ID: {} avec statut: {}", userId, status);
         return bookingRepository.findByUserIdAndStatusOrderByBookingDateDescBookingTimeDesc(userId, status, pageable)
-                .map(this::enrichBookingResponse);
+                .map(BookingResponse::fromEntity);
     }
 
     @Override
@@ -256,11 +258,11 @@ public class BookingServiceImpl implements BookingService {
     @Transactional(readOnly = true)
     public Page<BookingResponse> getPastBookingsByUser(Long userId, Pageable pageable) {
         log.debug("Récupération des réservations passées de l'utilisateur ID: {}", userId);
-        return bookingRepository.findPastBookingsByUser(userId, LocalDate.now(), LocalTime.now(), pageable)
+        return  bookingRepository.findPastBookingsByUser(userId, LocalDate.now(), LocalTime.now(), pageable)
                 .map(this::enrichBookingResponse);
     }
 
-    // Restaurant
+    // Listes restaurant
 
     @Override
     @Transactional(readOnly = true)
@@ -293,7 +295,7 @@ public class BookingServiceImpl implements BookingService {
                 .toList();
     }
 
-    // Créneaux
+    // CRÉNEAUX
 
     @Override
     @Transactional(readOnly = true)
@@ -309,14 +311,61 @@ public class BookingServiceImpl implements BookingService {
 
         Integer capacity = restaurantServiceClient.getRestaurantCapacity(restaurantId);
 
-        // Générer les créneaux (11h30-14h30 et 18h30-22h30)
+        // Récupérer les horaires d'ouverture du restaurant pour ce jour
+        List<RestaurantServiceClient.OpeningHoursInfo> openingHours =
+                restaurantServiceClient.getOpeningHours(restaurantId, date.getDayOfWeek());
+
         List<TimeSlotResponse.AvailableSlot> slots = new ArrayList<>();
 
-        // Midi
-        generateSlotsForPeriod(slots, restaurantId, date, LocalTime.of(11, 30), LocalTime.of(14, 30), capacity, partySize);
+        if (openingHours.isEmpty()) {
+            log.debug("Aucun horaire d'ouverture trouvé pour le restaurant {} le {}, utilisation des horaires par défaut",
+                    restaurantId, date.getDayOfWeek());
+            // Fallback : utiliser des horaires par défaut
+            generateSlotsForPeriod(slots, restaurantId, date, LocalTime.of(11, 30), LocalTime.of(14, 30), capacity, partySize);
+            generateSlotsForPeriod(slots, restaurantId, date, LocalTime.of(18, 30), LocalTime.of(22, 30), capacity, partySize);
+        } else {
+            // Traiter chaque enregistrement d'horaires
+            for (RestaurantServiceClient.OpeningHoursInfo hours : openingHours) {
+                if (Boolean.TRUE.equals(hours.getClosed())) {
+                    continue;
+                }
 
-        // Soir
-        generateSlotsForPeriod(slots, restaurantId, date, LocalTime.of(18, 30), LocalTime.of(22, 30), capacity, partySize);
+                // Horaires du matin (uniquement si ce n'est PAS un "after" de la nuit précédente)
+                // On ne génère les créneaux du matin que si l'heure d'ouverture est >= 8h
+                // Sinon, c'est un "after" qui sera affiché avec le jour précédent
+                if (hours.getOpeningTimeMorning() != null && hours.getClosingTimeMorning() != null) {
+                    // Ne PAS afficher les créneaux "after" (00h-06h) car ils appartiennent au jour précédent
+                    if (!hours.isMorningAfterMidnight()) {
+                        generateSlotsForPeriod(slots, restaurantId, date,
+                                hours.getOpeningTimeMorning(), hours.getClosingTimeMorning(),
+                                capacity, partySize);
+                    }
+                }
+
+                // Horaires du soir
+                if (hours.getOpeningTimeEvening() != null && hours.getClosingTimeEvening() != null) {
+                    LocalTime eveningOpen = hours.getOpeningTimeEvening();
+                    LocalTime eveningClose = hours.getClosingTimeEvening();
+
+                    // Si la fermeture traverse minuit (ex: 00:00), on génère jusqu'à 23:30
+                    // Les créneaux après minuit seront affichés le jour suivant
+                    if (hours.isEveningCrossingMidnight() || eveningClose.equals(LocalTime.MIDNIGHT)) {
+                        // Générer créneaux jusqu'à 23:30 seulement
+                        generateSlotsForPeriod(slots, restaurantId, date,
+                                eveningOpen, LocalTime.of(23, 30),
+                                capacity, partySize);
+                    } else {
+                        // Horaires normaux (ex: 18h - 22h30)
+                        generateSlotsForPeriod(slots, restaurantId, date,
+                                eveningOpen, eveningClose,
+                                capacity, partySize);
+                    }
+                }
+            }
+        }
+
+        // Trier les créneaux par heure
+        slots.sort((a, b) -> a.getTime().compareTo(b.getTime()));
 
         return TimeSlotResponse.builder()
                 .date(date)
@@ -332,7 +381,18 @@ public class BookingServiceImpl implements BookingService {
         int slotInterval = bookingProperties.getSlotIntervalMinutes();
         int duration = bookingProperties.getDurationMinutes();
 
-        while (current.plusMinutes(duration).isBefore(end) || current.plusMinutes(duration).equals(end)) {
+        // Protection contre boucle infinie
+        int maxIterations = 100;
+        int iterations = 0;
+
+        while (iterations < maxIterations &&
+                (current.isBefore(end) || current.equals(end)) &&
+                (current.plusMinutes(duration).isBefore(end) ||
+                        current.plusMinutes(duration).equals(end))) {
+
+            iterations++;
+
+            // Vérifier si le restaurant est ouvert à cette heure
             boolean isOpen = restaurantServiceClient.isRestaurantOpen(restaurantId, date.getDayOfWeek(), current);
 
             Integer bookedSeats = 0;
@@ -357,10 +417,15 @@ public class BookingServiceImpl implements BookingService {
                     .build());
 
             current = current.plusMinutes(slotInterval);
+
+            // Protection contre boucle infinie
+            if (current.equals(start)) {
+                break;
+            }
         }
     }
 
-    // Actions Restaurant
+    // ACTIONS RESTAURANT
 
     @Override
     @Transactional
@@ -449,7 +514,7 @@ public class BookingServiceImpl implements BookingService {
         return BookingResponse.fromEntity(noShowBooking);
     }
 
-    // Interne
+    // INTERNE
 
     @Override
     @Transactional(readOnly = true)
@@ -493,7 +558,7 @@ public class BookingServiceImpl implements BookingService {
             if (restaurant.getOwnerId() != null && restaurant.getOwnerId().equals(userId)) {
                 return;
             }
-        } catch (ResourceNotFoundException _) {
+        } catch (ResourceNotFoundException e) {
             log.warn("Restaurant {} non trouvé lors de la vérification d'accès", booking.getRestaurantId());
         } catch (Exception e) {
             log.error("Erreur lors de la vérification du propriétaire du restaurant {}: {}",
@@ -514,7 +579,7 @@ public class BookingServiceImpl implements BookingService {
                 return;
             }
             throw new ForbiddenException("Vous n'avez pas accès aux réservations de ce restaurant");
-        } catch (ResourceNotFoundException _) {
+        } catch (ResourceNotFoundException e) {
             log.warn("Restaurant {} non trouvé lors de la vérification d'accès", restaurantId);
             throw new ResourceNotFoundException("Restaurant", "id", restaurantId);
         } catch (ForbiddenException e) {
@@ -538,7 +603,7 @@ public class BookingServiceImpl implements BookingService {
         try {
             RestaurantServiceClient.RestaurantInfo restaurant = restaurantServiceClient.getRestaurantInfo(booking.getRestaurantId());
             return BookingResponse.fromEntityWithRestaurantName(booking, restaurant.getName());
-        } catch (Exception _) {
+        } catch (Exception e) {
             return BookingResponse.fromEntity(booking);
         }
     }
