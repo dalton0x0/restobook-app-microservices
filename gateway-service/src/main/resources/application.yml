@@ -1,0 +1,55 @@
+# GATEWAY SERVICE
+
+# Server Configuration
+server:
+  port: ${GATEWAY_SERVICE_PORT:8088}
+
+# Spring Configuration
+spring:
+  # Environment Variables Configuration
+  config:
+    import: optional:file:.env.properties
+
+  # Application Configuration
+  application:
+    name: gateway-service
+
+  # Discovery Configuration
+  cloud:
+    discovery:
+      enabled: true
+    gateway:
+      server:
+        webflux:
+          discovery:
+            locator:
+              enabled: true
+              lower-case-service-id: true
+
+# Eureka Configuration
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka}
+
+# Logging Configuration
+logging:
+  level:
+    root: ${LOG_LEVEL_ROOT:INFO}
+    com.restobook.gatewayservice: ${LOG_LEVEL_APP:DEBUG}
+    org.springframework.security: ${LOG_LEVEL_SECURITY:DEBUG}
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: ${LOG_FILE_PATH:logs/gateway-service.log}
+
+# Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when_authorized
