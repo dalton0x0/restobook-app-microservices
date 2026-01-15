@@ -95,6 +95,13 @@
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
             <version>3.0.0</version>
         </dependency>
+        <!-- Eureka -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+            <version>5.0.0</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
 
     <build>

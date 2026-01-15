@@ -32,6 +32,17 @@ spring:
         format_sql: true
     open-in-view: false
 
+  # Discovery Configuration
+  cloud:
+    discovery:
+      enabled: true
+
+# Eureka Configuration
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka}
+
 # JWT Configuration
 jwt:
   secret: ${JWT_SECRET:VotreCleSecreteTresLongueEtComplexe}

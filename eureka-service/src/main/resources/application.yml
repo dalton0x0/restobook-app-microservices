@@ -1,0 +1,43 @@
+# EUREKA SERVICE
+
+# Server Configuration
+server:
+  port: ${EUREKA_SERVICE_PORT:8761}
+
+# Spring Configuration
+spring:
+  # Environment Variables Configuration
+  config:
+    import: optional:file:.env.properties
+
+  # Application Configuration
+  application:
+    name: eureka-service
+
+# Eureka Configuration
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+
+# Logging Configuration
+logging:
+  level:
+    root: ${LOG_LEVEL_ROOT:INFO}
+    com.restobook.eurekaservice: ${LOG_LEVEL_APP:DEBUG}
+    org.springframework.security: ${LOG_LEVEL_SECURITY:DEBUG}
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: ${LOG_FILE_PATH:logs/eureka-service.log}
+
+# Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when_authorized
