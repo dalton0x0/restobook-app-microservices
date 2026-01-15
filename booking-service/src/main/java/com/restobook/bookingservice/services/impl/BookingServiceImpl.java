@@ -558,7 +558,7 @@ public class BookingServiceImpl implements BookingService {
             if (restaurant.getOwnerId() != null && restaurant.getOwnerId().equals(userId)) {
                 return;
             }
-        } catch (ResourceNotFoundException e) {
+        } catch (ResourceNotFoundException _) {
             log.warn("Restaurant {} non trouvé lors de la vérification d'accès", booking.getRestaurantId());
         } catch (Exception e) {
             log.error("Erreur lors de la vérification du propriétaire du restaurant {}: {}",
@@ -579,7 +579,7 @@ public class BookingServiceImpl implements BookingService {
                 return;
             }
             throw new ForbiddenException("Vous n'avez pas accès aux réservations de ce restaurant");
-        } catch (ResourceNotFoundException e) {
+        } catch (ResourceNotFoundException _) {
             log.warn("Restaurant {} non trouvé lors de la vérification d'accès", restaurantId);
             throw new ResourceNotFoundException("Restaurant", "id", restaurantId);
         } catch (ForbiddenException e) {
@@ -603,7 +603,7 @@ public class BookingServiceImpl implements BookingService {
         try {
             RestaurantServiceClient.RestaurantInfo restaurant = restaurantServiceClient.getRestaurantInfo(booking.getRestaurantId());
             return BookingResponse.fromEntityWithRestaurantName(booking, restaurant.getName());
-        } catch (Exception e) {
+        } catch (Exception _) {
             return BookingResponse.fromEntity(booking);
         }
     }

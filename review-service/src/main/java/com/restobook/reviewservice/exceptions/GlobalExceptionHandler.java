@@ -14,7 +14,6 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 @RestControllerAdvice
@@ -84,7 +83,7 @@ public class GlobalExceptionHandler {
                         .message(error.getDefaultMessage())
                         .rejectedValue(error.getRejectedValue())
                         .build())
-                .collect(Collectors.toList());
+                .toList();
 
         log.warn("Validation error: {} fields invalid - Path: {}", fieldErrors.size(), request.getRequestURI());
 
