@@ -176,6 +176,8 @@ cd resto-book-app-microservices
 
 ```
 resto-book-app-microservices/
+├── eureka-service/
+├── gateway-service/
 ├── auth-service/
 ├── restaurant-service/
 ├── booking-service/
