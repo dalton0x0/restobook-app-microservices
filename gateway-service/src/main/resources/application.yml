@@ -18,6 +18,8 @@ spring:
   cloud:
     discovery:
       enabled: true
+
+    # URI Configuration
     gateway:
       server:
         webflux:
@@ -25,6 +27,15 @@ spring:
             locator:
               enabled: true
               lower-case-service-id: true
+
+          # CORS Configuration
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                allowedOrigins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
+                allowed-methods: ${CORS_ALLOWED_METHODS}
+                allowed-headers: ${CORS_ALLOWED_HEADERS:*}
+                allow-credentials: ${CORS_ALLOW_CREDENTIALS:true}
 
 # Eureka Configuration
 eureka:

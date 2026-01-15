@@ -26,7 +26,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/reviews")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 @Tag(name = "Reviews", description = "Gestion des avis")
 public class ReviewController {
 

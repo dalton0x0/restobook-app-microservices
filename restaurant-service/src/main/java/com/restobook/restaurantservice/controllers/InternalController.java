@@ -20,7 +20,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/internal")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 @Tag(name = "Internal", description = "Endpoints internes pour la communication inter-services")
 public class InternalController {
 
