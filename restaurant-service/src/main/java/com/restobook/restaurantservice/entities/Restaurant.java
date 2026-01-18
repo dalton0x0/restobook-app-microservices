@@ -95,24 +95,4 @@ public class Restaurant {
     public void onUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
-
-    public void addOpeningHours(OpeningHour hours) {
-        openingHours.add(hours);
-        hours.setRestaurant(this);
-    }
-
-    public void removeOpeningHours(OpeningHour hours) {
-        openingHours.remove(hours);
-        hours.setRestaurant(null);
-    }
-
-    public void addMenuItem(MenuItem item) {
-        menuItems.add(item);
-        item.setRestaurant(this);
-    }
-
-    public void removeMenuItem(MenuItem item) {
-        menuItems.remove(item);
-        item.setRestaurant(null);
-    }
 }
