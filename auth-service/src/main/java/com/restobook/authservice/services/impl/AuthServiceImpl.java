@@ -64,19 +64,7 @@ public class AuthServiceImpl implements AuthService {
                     return new ResourceNotFoundException("Rôle CLIENT non trouvé");
                 });
 
-        // Créer l'utilisateur
-        User user = User.builder()
-                .firstName(request.getFirstName().trim())
-                .lastName(request.getLastName().trim())
-                .email(request.getEmail().toLowerCase().trim())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .phone(request.getPhone() != null ? request.getPhone().trim() : null)
-                .role(clientRole)
-                .enabled(true)
-                .emailVerified(false)
-                .accountNonLocked(true)
-                .build();
-
+        User user = buildNewUser(request, clientRole);
         User savedUser = userRepository.save(user);
         log.info("Utilisateur créé avec succès: {} (ID: {})", savedUser.getEmail(), savedUser.getId());
 
@@ -108,8 +96,8 @@ public class AuthServiceImpl implements AuthService {
             // Générer les tokens
             String accessToken = jwtTokenProvider.generateAccessToken(userDetails);
             RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
-
             log.info("Connexion réussie pour: {}", email);
+
             return AuthResponse.of(
                     accessToken,
                     refreshToken.getToken(),
@@ -240,5 +228,26 @@ public class AuthServiceImpl implements AuthService {
             log.error("Erreur lors de l'extraction des informations du token: {}", ex.getMessage());
             return TokenValidationResponse.invalid("Erreur lors de la validation du token");
         }
+    }
+
+    /**
+     * Construit le nouvel utilisateur à partir de la requête d'inscription
+     *
+     * @param request la requête d'inscription
+     * @param clientRole le rôle par défaut de l'utilisateur à l'inscription
+     * @return le nouvel utilisateur construit
+     */
+    private User buildNewUser(RegisterRequest request, Role clientRole) {
+        return User.builder()
+                .firstName(request.getFirstName().trim())
+                .lastName(request.getLastName().trim())
+                .email(request.getEmail().toLowerCase().trim())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .phone(request.getPhone() != null ? request.getPhone().trim() : null)
+                .role(clientRole)
+                .enabled(true)
+                .emailVerified(false)
+                .accountNonLocked(true)
+                .build();
     }
 }

@@ -1,5 +1,6 @@
 package com.restobook.authservice.exceptions;
 
+import com.restobook.authservice.constants.ExceptionConst;
 import com.restobook.authservice.dtos.response.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.NonNull;
@@ -163,7 +164,7 @@ public class GlobalExceptionHandler {
                 HttpStatus.UNAUTHORIZED.value(),
                 HttpStatus.UNAUTHORIZED.getReasonPhrase(),
                 "Email ou mot de passe incorrect",
-                "INVALID_CREDENTIALS",
+                ExceptionConst.INVALID_CREDENTIALS,
                 request.getRequestURI()
         );
 
@@ -180,7 +181,7 @@ public class GlobalExceptionHandler {
                 HttpStatus.UNAUTHORIZED.value(),
                 HttpStatus.UNAUTHORIZED.getReasonPhrase(),
                 "Erreur d'authentification",
-                "AUTHENTICATION_ERROR",
+                ExceptionConst.AUTHENTICATION_ERROR,
                 request.getRequestURI()
         );
 
@@ -197,7 +198,7 @@ public class GlobalExceptionHandler {
                 HttpStatus.UNAUTHORIZED.value(),
                 HttpStatus.UNAUTHORIZED.getReasonPhrase(),
                 "Problème de sécurité",
-                "SECURITY_ERROR",
+                ExceptionConst.SECURITY_ERROR,
                 request.getRequestURI()
         );
 
@@ -214,7 +215,7 @@ public class GlobalExceptionHandler {
                 HttpStatus.FORBIDDEN.value(),
                 HttpStatus.FORBIDDEN.getReasonPhrase(),
                 "Accès refusé. Vous n'avez pas les permissions nécessaires.",
-                "ACCESS_DENIED",
+                ExceptionConst.ACCESS_DENIED,
                 request.getRequestURI()
         );
 
@@ -230,7 +231,7 @@ public class GlobalExceptionHandler {
                 HttpStatus.NOT_FOUND.value(),
                 HttpStatus.NOT_FOUND.getReasonPhrase(),
                 "La ressource demandée n'existe pas",
-                "RESOURCE_NOT_FOUND",
+                ExceptionConst.RESOURCE_NOT_FOUND,
                 request.getRequestURI()
         );
 
@@ -247,7 +248,7 @@ public class GlobalExceptionHandler {
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(),
                 "Une erreur inattendue s'est produite. Veuillez réessayer plus tard.",
-                "INTERNAL_ERROR",
+                ExceptionConst.INTERNAL_ERROR,
                 request.getRequestURI()
         );
 

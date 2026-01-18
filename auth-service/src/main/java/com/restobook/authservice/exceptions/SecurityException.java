@@ -1,14 +1,15 @@
 package com.restobook.authservice.exceptions;
 
+import com.restobook.authservice.constants.ExceptionConst;
 import org.springframework.http.HttpStatus;
 
 public class SecurityException extends BusinessException {
 
     public SecurityException() {
-        super("Un problème de sécurité est survenu", HttpStatus.UNAUTHORIZED, "SECURITY_ERROR");
+        super("Un problème de sécurité est survenu", HttpStatus.UNAUTHORIZED, ExceptionConst.SECURITY_ERROR);
     }
 
     public SecurityException(String message) {
-        super(message, HttpStatus.UNAUTHORIZED, "SECURITY_ERROR");
+        super(message, HttpStatus.UNAUTHORIZED, ExceptionConst.SECURITY_ERROR);
     }
 }

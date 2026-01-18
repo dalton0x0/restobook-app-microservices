@@ -52,12 +52,7 @@ public class UserServiceImpl implements UserService {
     public UserResponse getUserById(Long id) {
         log.debug("Recherche de l'utilisateur par ID: {}", id);
 
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> {
-                    log.debug("Utilisateur non trouvé avec l'ID: {}", id);
-                    return new ResourceNotFoundException("id", id);
-                });
-
+        User user = findUserByIdOrThrow(id);
         log.debug("Utilisateur trouvé par ID: {}", user.getFullName());
 
         return UserResponse.fromEntity(user);
@@ -84,7 +79,7 @@ public class UserServiceImpl implements UserService {
     public PageResponse<UserResponse> getUsersByRole(RoleName roleName, Pageable pageable) {
         log.debug("Récupération des utilisateurs avec le rôle: {}", roleName);
 
-        Page<@NonNull User> userPage = userRepository.findByRoleName(roleName, pageable);
+        Page<@NonNull User> userPage = userRepository.findByRole_Name(roleName, pageable);
         Page<@NonNull UserResponse> responsePage = userPage.map(UserResponse::fromEntity);
         log.debug("Nombre d'utilisateurs avec le rôle {}: {}", roleName, userPage.getTotalElements());
 
@@ -108,34 +103,14 @@ public class UserServiceImpl implements UserService {
     public UserResponse createUser(CreateUserRequest request) {
         log.info("Création d'un nouvel utilisateur: {}", request.getEmail());
 
-        // Vérifier si l'email existe déjà
-        if (existsByEmail(request.getEmail())) {
-            log.warn("Email déjà existant: {}", request.getEmail());
-            throw new DuplicateResourceException("Utilisateur", "email", request.getEmail());
+        validateEmailUniqueness(request.getEmail());
+
+        if (request.getPhone() != null) {
+            validatePhoneUniqueness(request.getPhone(), null);
         }
 
-        // Vérifier si le téléphone existe déjà
-        if (request.getPhone() != null && userRepository.existsByPhone(request.getPhone())) {
-            log.warn("Téléphone déjà existant: {}", request.getPhone());
-            throw new DuplicateResourceException("Utilisateur", "téléphone", request.getPhone());
-        }
-
-        // Récupérer le rôle
-        Role role = roleRepository.findByName(request.getRoleName())
-                .orElseThrow(() -> new ResourceNotFoundException("Rôle", "nom", request.getRoleName()));
-
-        User user = User.builder()
-                .firstName(request.getFirstName())
-                .lastName(request.getLastName())
-                .email(request.getEmail())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .phone(request.getPhone())
-                .role(role)
-                .enabled(true)
-                .emailVerified(true)
-                .accountNonLocked(true)
-                .build();
-
+        Role role = findRoleByNameOrThrow(request.getRoleName());
+        User user = buildNewUser(request, role);
         User savedUser = userRepository.save(user);
         log.info("Utilisateur créé avec succès: {} avec le rôle: {}", savedUser.getEmail(), role.getName());
 
@@ -147,25 +122,8 @@ public class UserServiceImpl implements UserService {
     public UserResponse updateUser(Long id, UpdateUserRequest request) {
         log.info("Mise à jour de l'utilisateur ID: {}", id);
 
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("id", id));
-
-        if (request.getFirstName() != null && !request.getFirstName().isBlank()) {
-            user.setFirstName(request.getFirstName());
-        }
-
-        if (request.getLastName() != null && !request.getLastName().isBlank()) {
-            user.setLastName(request.getLastName());
-        }
-
-        if (request.getPhone() != null) {
-            if (!request.getPhone().isBlank() && userRepository.existsByPhone(request.getPhone()) && !request.getPhone().equals(user.getPhone())) {
-                    throw new DuplicateResourceException("Utilisateur", "téléphone", request.getPhone());
-                }
-
-            user.setPhone(request.getPhone());
-        }
-
+        User user = findUserByIdOrThrow(id);
+        updateUserFields(user, request);
         User updatedUser = userRepository.save(user);
         log.info("Utilisateur mis à jour avec succès: {}", user.getEmail());
 
@@ -177,16 +135,10 @@ public class UserServiceImpl implements UserService {
     public UserResponse updateUserRole(Long id, UpdateRoleRequest request) {
         log.info("Mise à jour du rôle de l'utilisateur ID: {} vers: {}", id, request.getRoleName());
 
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("id", id));
-
-        Role newRole = roleRepository.findByName(request.getRoleName())
-                .orElseThrow(() -> new ResourceNotFoundException("Rôle", "nom", request.getRoleName()));
-
+        User user = findUserByIdOrThrow(id);
+        Role newRole = findRoleByNameOrThrow(request.getRoleName());
         user.setRole(newRole);
         User updatedUser = userRepository.save(user);
-
-        // Révoquer les tokens existants
         refreshTokenService.revokeAllUserTokens(id);
         log.info("Rôle de l'utilisateur {} mis à jour vers: {}", user.getEmail(), newRole.getName());
 
@@ -198,9 +150,7 @@ public class UserServiceImpl implements UserService {
     public UserResponse enableUser(Long id) {
         log.info("Activation de l'utilisateur ID: {}", id);
 
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("id", id));
-
+        User user = findUserByIdOrThrow(id);
         user.setEnabled(true);
         User updatedUser = userRepository.save(user);
         log.info("Utilisateur activé: {}", user.getEmail());
@@ -213,13 +163,9 @@ public class UserServiceImpl implements UserService {
     public UserResponse disableUser(Long id) {
         log.info("Désactivation de l'utilisateur ID: {}", id);
 
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("id", id));
-
+        User user = findUserByIdOrThrow(id);
         user.setEnabled(false);
         User updatedUser = userRepository.save(user);
-
-        // Révoquer tous les tokens
         refreshTokenService.revokeAllUserTokens(id);
         log.info("Utilisateur désactivé: {}", user.getEmail());
 
@@ -231,15 +177,10 @@ public class UserServiceImpl implements UserService {
     public void deleteUser(Long id) {
         log.info("Suppression de l'utilisateur ID: {}", id);
 
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("id", id));
-
-        // Révoquer tous les tokens avant la suppression
+        User user = findUserByIdOrThrow(id);
         refreshTokenService.revokeAllUserTokens(id);
-
-        // Supprimer tous les tokens expirés
-        int deleteTokenExpired = refreshTokenService.deleteExpiredTokens();
-        log.debug("{} tokens expirés supprimés", deleteTokenExpired);
+        int deletedTokensCount = refreshTokenService.deleteExpiredTokens();
+        log.debug("{} tokens expirés supprimés", deletedTokensCount);
         userRepository.delete(user);
         log.info("Utilisateur supprimé: {}", user.getEmail());
     }
@@ -256,28 +197,8 @@ public class UserServiceImpl implements UserService {
     public UserResponse updateCurrentUser(Long userId, UpdateUserRequest request) {
         log.info("Mise à jour du profil utilisateur ID: {}", userId);
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("id", userId));
-
-        if (request.getFirstName() != null && !request.getFirstName().isBlank()) {
-            user.setFirstName(request.getFirstName());
-        }
-
-        if (request.getLastName() != null && !request.getLastName().isBlank()) {
-            user.setLastName(request.getLastName());
-        }
-
-        if (request.getPhone() != null) {
-            // Vérifier si le téléphone est déjà utilisé par un autre utilisateur
-            if (!request.getPhone().isBlank() && userRepository.existsByPhone(request.getPhone())) {
-                User existingUser = userRepository.findByEmail(user.getEmail()).orElse(null);
-                if (existingUser == null || !existingUser.getPhone().equals(request.getPhone())) {
-                    throw new DuplicateResourceException("Utilisateur", "téléphone", request.getPhone());
-                }
-            }
-            user.setPhone(request.getPhone());
-        }
-
+        User user = findUserByIdOrThrow(userId);
+        updateUserFields(user, request);
         User updatedUser = userRepository.save(user);
         log.info("Profil mis à jour avec succès pour: {}", user.getEmail());
 
@@ -289,37 +210,185 @@ public class UserServiceImpl implements UserService {
     public void changePassword(Long userId, ChangePasswordRequest request) {
         log.info("Changement de mot de passe pour l'utilisateur ID: {}", userId);
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("id", userId));
-
-        // Vérifier l'ancien mot de passe
-        if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
-            log.debug("Ancien mot de passe incorrect pour: {}", user.getEmail());
-            throw new BusinessException("L'ancien mot de passe est incorrect", HttpStatus.BAD_REQUEST, "INVALID_OLD_PASSWORD");
-        }
-
-        // Vérifier que le nouveau mot de passe correspond à la confirmation
-        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
-            log.debug("Le nouveau mot de passe et la confirmation ne correspondent pas");
-            throw new BusinessException("Le nouveau mot de passe et la confirmation ne correspondent pas", HttpStatus.BAD_REQUEST, "PASSWORD_MISMATCH");
-        }
-
-        // Vérifier que le nouveau mot de passe est différent de l'ancien
-        if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
-            log.debug("Le nouveau mot de passe doit être différent de l'ancien");
-            throw new BusinessException("Le nouveau mot de passe doit être différent de l'ancien", HttpStatus.BAD_REQUEST, "SAME_PASSWORD");
-        }
-
+        User user = findUserByIdOrThrow(userId);
+        validateOldPassword(request.getOldPassword(), user.getPassword(), user.getEmail());
+        validatePasswordMatch(request.getNewPassword(), request.getConfirmPassword());
+        validatePasswordDifferent(request.getNewPassword(), user.getPassword());
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
-
-        // Révoquer tous les refresh tokens existants
         refreshTokenService.revokeAllUserTokens(userId);
+
         log.info("Mot de passe changé avec succès pour: {}", user.getEmail());
     }
 
     @Override
     public boolean existsByEmail(String email) {
         return userRepository.existsByEmail(email);
+    }
+
+    /**
+     * Recherche un utilisateur par ID ou lève une exception si non trouvée.
+     *
+     * @param id l'identifiant de l'utilisateur
+     * @return l'utilisateur trouvé
+     * @throws ResourceNotFoundException si l'utilisateur n'existe pas
+     */
+    private User findUserByIdOrThrow(Long id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> {
+                    log.debug("Utilisateur non trouvé avec l'ID: {}", id);
+                    return new ResourceNotFoundException("id", id);
+                });
+    }
+
+    /**
+     * Recherche un role par nom ou lève une exception si non trouvée.
+     * Methode privée pour éviter la duplication de code.
+     *
+     * @param roleName le nom du role
+     * @return le role trouvé
+     * @throws ResourceNotFoundException si le role n'existe pas
+     */
+    private Role findRoleByNameOrThrow(RoleName roleName) {
+        return roleRepository.findByName(roleName)
+                .orElseThrow(() -> new ResourceNotFoundException("Role", "nom", roleName));
+    }
+
+    /**
+     * Valide que l'email n'est pas déjà utilisé.
+     *
+     * @param email l'email a valider
+     * @throws DuplicateResourceException si l'email existe déjà
+     */
+    private void validateEmailUniqueness(String email) {
+        if (existsByEmail(email)) {
+            log.warn("Email déjà existant: {}", email);
+            throw new DuplicateResourceException("Utilisateur", "email", email);
+        }
+    }
+
+    /**
+     * Valide que le numéro de télephone n'est pas déjà utilisé par un autre utilisateur.
+     *
+     * @param phone le numéro de télephone a valider
+     * @param currentUserPhone le télephone actuel de l'utilisateur (peut être null pour une creation)
+     * @throws DuplicateResourceException si le télephone existe déjà
+     */
+    private void validatePhoneUniqueness(String phone, String currentUserPhone) {
+        // Si le télephone est vide, pas de validation nécessaire
+        if (phone == null || phone.isBlank()) {
+            return;
+        }
+
+        // Si le télephone est identique à celui actuel de l'utilisateur, pas de validation
+        if (phone.equals(currentUserPhone)) {
+            return;
+        }
+
+        // Verifier si le télephone est déjà utilisé
+        if (userRepository.existsByPhone(phone)) {
+            log.warn("télephone déjà existant: {}", phone);
+            throw new DuplicateResourceException("Utilisateur", "télephone", phone);
+        }
+    }
+
+    /**
+     * Construit un nouvel utilisateur à partir de la requête de création.
+     *
+     * @param request la requête de création
+     * @param role le rôle à assigner
+     * @return le nouvel utilisateur construit
+     */
+    private User buildNewUser(CreateUserRequest request, Role role) {
+        return User.builder()
+                .firstName(request.getFirstName())
+                .lastName(request.getLastName())
+                .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .phone(request.getPhone())
+                .role(role)
+                .enabled(true)
+                .emailVerified(true)
+                .accountNonLocked(true)
+                .build();
+    }
+
+    /**
+     * Met à jour les champs modifiables d'un utilisateur.
+     *
+     * @param user l'utilisateur à modifier
+     * @param request la requête de mise à jour contenant les nouveaux champs
+     */
+    private void updateUserFields(User user, UpdateUserRequest request) {
+        // Mise a jour du prenom si fourni et non vide
+        if (request.getFirstName() != null && !request.getFirstName().isBlank()) {
+            user.setFirstName(request.getFirstName());
+        }
+
+        // Mise à jour du nom si fourni et non vide
+        if (request.getLastName() != null && !request.getLastName().isBlank()) {
+            user.setLastName(request.getLastName());
+        }
+
+        // Mise à jour du télephone avec validation d'unicité
+        if (request.getPhone() != null) {
+            validatePhoneUniqueness(request.getPhone(), user.getPhone());
+            user.setPhone(request.getPhone());
+        }
+    }
+
+    /**
+     * Valide que l'ancien mot de passe correspond au mot de passe actuel.
+     *
+     * @param oldPassword l'ancien mot de passe fourni
+     * @param currentPassword le mot de passe actuel encode
+     * @param userEmail l'email de l'utilisateur pour le logging
+     * @throws BusinessException si l'ancien mot de passe est incorrect
+     */
+    private void validateOldPassword(String oldPassword, String currentPassword, String userEmail) {
+        if (!passwordEncoder.matches(oldPassword, currentPassword)) {
+            log.debug("Ancien mot de passe incorrect pour: {}", userEmail);
+            throw new BusinessException(
+                    "L'ancien mot de passe est incorrect",
+                    HttpStatus.BAD_REQUEST,
+                    "INVALID_OLD_PASSWORD"
+            );
+        }
+    }
+
+    /**
+     * Valide que le nouveau mot de passe correspond à sa confirmation.
+     *
+     * @param newPassword le nouveau mot de passe
+     * @param confirmPassword la confirmation du nouveau mot de passe
+     * @throws BusinessException si les mots de passe ne correspondent pas
+     */
+    private void validatePasswordMatch(String newPassword, String confirmPassword) {
+        if (!newPassword.equals(confirmPassword)) {
+            log.debug("Le nouveau mot de passe et la confirmation ne correspondent pas");
+            throw new BusinessException(
+                    "Le nouveau mot de passe et la confirmation ne correspondent pas",
+                    HttpStatus.BAD_REQUEST,
+                    "PASSWORD_MISMATCH"
+            );
+        }
+    }
+
+    /**
+     * Valide que le nouveau mot de passe est different de l'ancien.
+     *
+     * @param newPassword le nouveau mot de passe
+     * @param currentPassword le mot de passe actuel encodé
+     * @throws BusinessException si les mots de passe sont identiques
+     */
+    private void validatePasswordDifferent(String newPassword, String currentPassword) {
+        if (passwordEncoder.matches(newPassword, currentPassword)) {
+            log.debug("Le nouveau mot de passe doit être different de l'ancien");
+            throw new BusinessException(
+                    "Le nouveau mot de passe doit être different de l'ancien",
+                    HttpStatus.BAD_REQUEST,
+                    "SAME_PASSWORD"
+            );
+        }
     }
 }
