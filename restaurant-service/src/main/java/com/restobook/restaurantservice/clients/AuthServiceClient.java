@@ -65,8 +65,10 @@ public class AuthServiceClient {
                     .uri("api/v1/internal/users/{id}", userId)
                     .header(AuthenticationConst.AUTH_HEADER, AuthenticationConst.TOKEN_PREFIX + token)
                     .retrieve()
-                    .onStatus(HttpStatusCode::is4xxClientError, _ ->
-                            Mono.error(new ResourceNotFoundException("Utilisateur inexistant")))
+                    .onStatus(HttpStatusCode::is4xxClientError, clientResponse -> {
+                        log.debug("Utilisateur non trouvé:{}", clientResponse.statusCode());
+                        return Mono.error(new ResourceNotFoundException("Utilisateur inexistant"));
+                    })
                     .bodyToMono(TokenValidationResponse.UserInfo.class)
                     .block();
         } catch (Exception e) {
