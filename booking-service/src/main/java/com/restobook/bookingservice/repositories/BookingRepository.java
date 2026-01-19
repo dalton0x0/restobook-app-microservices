@@ -17,32 +17,72 @@ import java.util.Optional;
 @Repository
 public interface BookingRepository extends JpaRepository<Booking, Long> {
 
-    // Recherche par référence
+    /**
+     * Recherche une reservation par sa reference unique.
+     *
+     * @param bookingReference la reference de la reservation
+     * @return un Optional contenant la reservation si trouvée
+     */
     Optional<Booking> findByBookingReference(String bookingReference);
 
-    // Réservations d'un utilisateur
+    /**
+     * Récupère toutes les reservations d'un utilisateur triées par date et heure décroissantes.
+     *
+     * @param userId l'identifiant de l'utilisateur
+     * @param pageable les informations de pagination
+     * @return une page de reservations
+     */
     Page<Booking> findByUserIdOrderByBookingDateDescBookingTimeDesc(Long userId, Pageable pageable);
 
-    // Réservations d'un utilisateur par statut
-    Page<Booking> findByUserIdAndStatusOrderByBookingDateDescBookingTimeDesc(Long userId, BookingStatus status, Pageable pageable);
+    /**
+     * Récupère toutes les reservations d'un utilisateur filtrées par statut.
+     *
+     * @param userId l'identifiant de l'utilisateur
+     * @param status le statut des reservations
+     * @param pageable les informations de pagination
+     * @return une page de reservations
+     */
+    Page<Booking> findByUserIdAndStatusOrderByBookingDateDescBookingTimeDesc(
+            Long userId, BookingStatus status, Pageable pageable);
 
-    // Réservations d'un restaurant
+    /**
+     * Récupère toutes les reservations d'un restaurant triées par date et heure décroissantes.
+     *
+     * @param restaurantId l'identifiant du restaurant
+     * @param pageable les informations de pagination
+     * @return une page de reservations
+     */
     Page<Booking> findByRestaurantIdOrderByBookingDateDescBookingTimeDesc(Long restaurantId, Pageable pageable);
 
-    // Réservations d'un restaurant par date
+    /**
+     * Récupère toutes les reservations d'un restaurant pour une date spécifique triées par heure.
+     *
+     * @param restaurantId l'identifiant du restaurant
+     * @param bookingDate la date des reservations
+     * @return une liste de reservations triée par heure
+     */
     List<Booking> findByRestaurantIdAndBookingDateOrderByBookingTimeAsc(Long restaurantId, LocalDate bookingDate);
 
-    // Réservations actives d'un restaurant pour une date (non annulées)
-    @Query("SELECT b FROM Booking b WHERE b.restaurantId = :restaurantId " +
-            "AND b.bookingDate = :bookingDate " +
-            "AND b.status IN ('PENDING', 'CONFIRMED') " +
-            "ORDER BY b.bookingTime ASC")
-    List<Booking> findActiveBookingsByRestaurantAndDate(
-            @Param("restaurantId") Long restaurantId,
-            @Param("bookingDate") LocalDate bookingDate
-    );
+    /**
+     * Récupère toutes les reservations actives (non annulées) d'un restaurant pour une date.
+     * Utilise In pour filtrer sur PENDING et CONFIRMED.
+     *
+     * @param restaurantId l'identifiant du restaurant
+     * @param bookingDate la date des reservations
+     * @param statuses les statuts a inclure (PENDING, CONFIRMED)
+     * @return une liste de reservations actives triée par heure
+     */
+    List<Booking> findByRestaurantIdAndBookingDateAndStatusInOrderByBookingTimeAsc(Long restaurantId, LocalDate bookingDate, List<BookingStatus> statuses);
 
-    // Calculer le nombre de personnes réservées pour un créneau
+    /**
+     * Calcule le nombre total de places reservees pour un créneau horaire spécifique.
+     *
+     * @param restaurantId l'identifiant du restaurant
+     * @param bookingDate la date du créneau
+     * @param slotTime l'heure de debut du créneau
+     * @param slotEndTime l'heure de fin du créneau
+     * @return le nombre total de places reservees
+     */
     @Query("SELECT COALESCE(SUM(b.partySize), 0) FROM Booking b " +
             "WHERE b.restaurantId = :restaurantId " +
             "AND b.bookingDate = :bookingDate " +
@@ -56,7 +96,13 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             @Param("slotEndTime") LocalTime slotEndTime
     );
 
-    // Réservations à confirmer automatiquement (passées depuis X heures)
+    /**
+     * Récupère toutes les reservations en attente qui doivent être complétées automatiquement.
+     *
+     * @param today la date actuelle
+     * @param currentTime l'heure actuelle
+     * @return une liste de reservations en attente a completer
+     */
     @Query("SELECT b FROM Booking b WHERE b.status = 'PENDING' " +
             "AND (b.bookingDate < :today OR (b.bookingDate = :today AND b.bookingTime < :currentTime))")
     List<Booking> findPendingBookingsToComplete(
@@ -64,25 +110,44 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             @Param("currentTime") LocalTime currentTime
     );
 
-    @Query("SELECT b FROM Booking b WHERE b.userId = :userId " +
-            "AND b.restaurantId = :restaurantId " +
-            "AND b.status = 'COMPLETED'")
-    List<Booking> findCompletedBookingsByUserAndRestaurant(
-            @Param("userId") Long userId,
-            @Param("restaurantId") Long restaurantId
-    );
+    /**
+     * Récupère toutes les reservations complétées d'un utilisateur pour un restaurant spécifique.
+     *
+     * @param userId l'identifiant de l'utilisateur
+     * @param restaurantId l'identifiant du restaurant
+     * @param status le statut COMPLETED
+     * @return une liste de reservations complétées
+     */
+    List<Booking> findByUserIdAndRestaurantIdAndStatus(Long userId, Long restaurantId, BookingStatus status);
 
-    // Vérifier si une réservation est complétée pour un utilisateur et restaurant
+    /**
+     * Vérifie si un utilisateur à au moins une reservation complétée pour un restaurant.
+     *
+     * @param userId l'identifiant de l'utilisateur
+     * @param restaurantId l'identifiant du restaurant
+     * @param status le statut a verifier
+     * @return true si au moins une reservation existe
+     */
     boolean existsByUserIdAndRestaurantIdAndStatus(Long userId, Long restaurantId, BookingStatus status);
 
-    // Statistiques par restaurant
-    @Query("SELECT COUNT(b) FROM Booking b WHERE b.restaurantId = :restaurantId " +
-            "AND b.bookingDate = :date AND b.status NOT IN ('CANCELLED', 'REJECTED')")
-    Long countBookingsByRestaurantAndDate(
-            @Param("restaurantId") Long restaurantId,
-            @Param("date") LocalDate date
-    );
+    /**
+     * Compte le nombre de reservations actives d'un restaurant pour une date.
+     *
+     * @param restaurantId l'identifiant du restaurant
+     * @param date la date
+     * @param excludedStatuses les statuts a exclure (CANCELLED, REJECTED)
+     * @return le nombre de reservations actives
+     */
+    long countByRestaurantIdAndBookingDateAndStatusNotIn(Long restaurantId, LocalDate date, List<BookingStatus> excludedStatuses);
 
+    /**
+     * Récupère toutes les reservations à venir d'un utilisateur.
+     *
+     * @param userId l'identifiant de l'utilisateur
+     * @param today la date actuelle
+     * @param currentTime l'heure actuelle
+     * @return une liste de reservations à venir, triée par date et heure
+     */
     @Query("SELECT b FROM Booking b WHERE b.userId = :userId " +
             "AND (b.bookingDate > :today OR (b.bookingDate = :today AND b.bookingTime >= :currentTime)) " +
             "AND b.status IN ('PENDING', 'CONFIRMED') " +
@@ -93,6 +158,15 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             @Param("currentTime") LocalTime currentTime
     );
 
+    /**
+     * Récupère toutes les reservations passées d'un utilisateur.
+     *
+     * @param userId l'identifiant de l'utilisateur
+     * @param today la date actuelle
+     * @param currentTime l'heure actuelle
+     * @param pageable les informations de pagination
+     * @return une page de reservations passees triée par date et heure décroissantes
+     */
     @Query("SELECT b FROM Booking b WHERE b.userId = :userId " +
             "AND (b.bookingDate < :today OR (b.bookingDate = :today AND b.bookingTime < :currentTime)) " +
             "ORDER BY b.bookingDate DESC, b.bookingTime DESC")
@@ -101,14 +175,5 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             @Param("today") LocalDate today,
             @Param("currentTime") LocalTime currentTime,
             Pageable pageable
-    );
-
-    @Query("SELECT b FROM Booking b WHERE b.restaurantId = :restaurantId " +
-            "AND b.bookingDate = :today " +
-            "AND b.status IN ('PENDING', 'CONFIRMED') " +
-            "ORDER BY b.bookingTime ASC")
-    List<Booking> findTodayBookingsByRestaurant(
-            @Param("restaurantId") Long restaurantId,
-            @Param("today") LocalDate today
     );
 }

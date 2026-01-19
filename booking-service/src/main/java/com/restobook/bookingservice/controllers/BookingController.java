@@ -35,19 +35,6 @@ public class BookingController {
     private final BookingService bookingService;
     private final AuthServiceClient authServiceClient;
 
-    @PostMapping
-    @Operation(summary = "Créer une réservation")
-    public ResponseEntity<ApiResponse<BookingResponse>> createBooking(
-            @Valid @RequestBody CreateBookingRequest request,
-            @RequestHeader(AuthenticationConst.AUTH_HEADER) String authHeader) {
-
-        TokenValidationResponse tokenInfo = validateToken(authHeader);
-        log.debug("Requête HTTP POST /bookings - Utilisateur: {}", tokenInfo.getEmail());
-        BookingResponse booking = bookingService.createBooking(request, tokenInfo.getUserId());
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Réservation créée avec succès", booking));
-    }
-
     @GetMapping("/{id}")
     @Operation(summary = "Détails d'une réservation")
     public ResponseEntity<ApiResponse<BookingResponse>> getBookingById(
@@ -70,32 +57,6 @@ public class BookingController {
         log.debug("Requête HTTP GET /bookings/reference/{} - Utilisateur: {}", reference, tokenInfo.getEmail());
         BookingResponse booking = bookingService.getBookingByReference(reference, tokenInfo.getUserId(), tokenInfo.getRole());
         return ResponseEntity.ok(ApiResponse.success(booking));
-    }
-
-    @PutMapping("/{id}")
-    @Operation(summary = "Modifier une réservation")
-    public ResponseEntity<ApiResponse<BookingResponse>> updateBooking(
-            @PathVariable Long id,
-            @Valid @RequestBody UpdateBookingRequest request,
-            @RequestHeader(AuthenticationConst.AUTH_HEADER) String authHeader) {
-
-        TokenValidationResponse tokenInfo = validateToken(authHeader);
-        log.debug("Requête HTTP PUT /bookings/{} - Utilisateur: {}", id, tokenInfo.getEmail());
-        BookingResponse booking = bookingService.updateBooking(id, request, tokenInfo.getUserId(), tokenInfo.getRole());
-        return ResponseEntity.ok(ApiResponse.success("Réservation modifiée", booking));
-    }
-
-    @PostMapping("/{id}/cancel")
-    @Operation(summary = "Annuler une réservation")
-    public ResponseEntity<ApiResponse<BookingResponse>> cancelBooking(
-            @PathVariable Long id,
-            @RequestBody(required = false) CancelBookingRequest request,
-            @RequestHeader(AuthenticationConst.AUTH_HEADER) String authHeader) {
-
-        TokenValidationResponse tokenInfo = validateToken(authHeader);
-        log.debug("Requête HTTP POST /bookings/{}/cancel - Utilisateur: {}", id, tokenInfo.getEmail());
-        BookingResponse booking = bookingService.cancelBooking(id, request, tokenInfo.getUserId(), tokenInfo.getRole());
-        return ResponseEntity.ok(ApiResponse.success("Réservation annulée", booking));
     }
 
     @GetMapping("/my-bookings")
@@ -157,6 +118,45 @@ public class BookingController {
                 restaurantId, date, partySize);
         TimeSlotResponse slots = bookingService.getAvailableSlots(restaurantId, date, partySize);
         return ResponseEntity.ok(ApiResponse.success(slots));
+    }
+
+    @PostMapping
+    @Operation(summary = "Créer une réservation")
+    public ResponseEntity<ApiResponse<BookingResponse>> createBooking(
+            @Valid @RequestBody CreateBookingRequest request,
+            @RequestHeader(AuthenticationConst.AUTH_HEADER) String authHeader) {
+
+        TokenValidationResponse tokenInfo = validateToken(authHeader);
+        log.debug("Requête HTTP POST /bookings - Utilisateur: {}", tokenInfo.getEmail());
+        BookingResponse booking = bookingService.createBooking(request, tokenInfo.getUserId());
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Réservation créée avec succès", booking));
+    }
+
+    @PutMapping("/{id}")
+    @Operation(summary = "Modifier une réservation")
+    public ResponseEntity<ApiResponse<BookingResponse>> updateBooking(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateBookingRequest request,
+            @RequestHeader(AuthenticationConst.AUTH_HEADER) String authHeader) {
+
+        TokenValidationResponse tokenInfo = validateToken(authHeader);
+        log.debug("Requête HTTP PUT /bookings/{} - Utilisateur: {}", id, tokenInfo.getEmail());
+        BookingResponse booking = bookingService.updateBooking(id, request, tokenInfo.getUserId(), tokenInfo.getRole());
+        return ResponseEntity.ok(ApiResponse.success("Réservation modifiée", booking));
+    }
+
+    @PostMapping("/{id}/cancel")
+    @Operation(summary = "Annuler une réservation")
+    public ResponseEntity<ApiResponse<BookingResponse>> cancelBooking(
+            @PathVariable Long id,
+            @RequestBody(required = false) CancelBookingRequest request,
+            @RequestHeader(AuthenticationConst.AUTH_HEADER) String authHeader) {
+
+        TokenValidationResponse tokenInfo = validateToken(authHeader);
+        log.debug("Requête HTTP POST /bookings/{}/cancel - Utilisateur: {}", id, tokenInfo.getEmail());
+        BookingResponse booking = bookingService.cancelBooking(id, request, tokenInfo.getUserId(), tokenInfo.getRole());
+        return ResponseEntity.ok(ApiResponse.success("Réservation annulée", booking));
     }
 
     // Restaurant (OWNER/STAFF/ADMIN)
@@ -241,7 +241,7 @@ public class BookingController {
     }
 
     @PatchMapping("/{id}/no-show")
-    @Operation(summary = "Marquer comme absence")
+    @Operation(summary = "Marquer comme absente")
     public ResponseEntity<ApiResponse<BookingResponse>> markAsNoShow(
             @PathVariable Long id,
             @RequestHeader(AuthenticationConst.AUTH_HEADER) String authHeader) {
@@ -249,7 +249,7 @@ public class BookingController {
         TokenValidationResponse tokenInfo = validateToken(authHeader);
         log.debug("Requête HTTP PATCH /bookings/{}/no-show - Utilisateur: {}", id, tokenInfo.getEmail());
         BookingResponse booking = bookingService.markAsNoShow(id, tokenInfo.getUserId(), tokenInfo.getRole());
-        return ResponseEntity.ok(ApiResponse.success("Réservation marquée comme absence", booking));
+        return ResponseEntity.ok(ApiResponse.success("Réservation marquée comme absente", booking));
     }
 
     private TokenValidationResponse validateToken(String authHeader) {
