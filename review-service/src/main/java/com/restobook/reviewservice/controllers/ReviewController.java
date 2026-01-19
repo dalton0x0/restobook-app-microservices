@@ -100,8 +100,7 @@ public class ReviewController {
 
         TokenValidationResponse tokenInfo = validateToken(authHeader);
         log.debug("Requête HTTP GET /api/v1/reviews/restaurant/{}/all - Utilisateur: {}", restaurantId, tokenInfo.getEmail());
-        Page<ReviewResponse> reviews = reviewService.getAllReviewsByRestaurant(
-                restaurantId, tokenInfo.getUserId(), tokenInfo.getRole(), pageable);
+        Page<ReviewResponse> reviews = reviewService.getAllReviewsByRestaurant(restaurantId, tokenInfo.getUserId(), tokenInfo.getRole(), pageable);
         return ResponseEntity.ok(ApiResponse.success(PageResponse.of(reviews)));
     }
 
