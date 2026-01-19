@@ -29,10 +29,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Implementation du service de gestion des avis.
- * Gere les operations CRUD et la logique metier associee aux avis de restaurants.
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -46,36 +42,26 @@ public class ReviewServiceImpl implements ReviewService {
     @Override
     @Transactional
     public ReviewResponse createReview(CreateReviewRequest request, Long userId, String userName) {
-        log.info("Creation d'un avis par l'utilisateur ID: {} pour le restaurant ID: {}",
-                userId, request.getRestaurantId());
+        log.info("Création d'un avis par l'utilisateur ID: {} pour le restaurant ID: {}", userId, request.getRestaurantId());
 
-        // Valider que le restaurant existe
         if (!restaurantServiceClient.restaurantExists(request.getRestaurantId())) {
             throw new ResourceNotFoundException("Restaurant", "id", request.getRestaurantId());
         }
 
-        // Verifier que l'utilisateur n'a pas deja evalue ce restaurant
         if (hasReviewedRestaurant(userId, request.getRestaurantId())) {
             throw ReviewException.alreadyReviewed();
         }
 
-        // Verifier que l'utilisateur a une reservation terminee
         boolean hasCompletedBooking = bookingServiceClient.hasCompletedBooking(userId, request.getRestaurantId());
         if (!hasCompletedBooking) {
             throw ReviewException.noCompletedBooking();
         }
 
-        // Valider la note
         validateRating(request.getRating());
-
-        // Construire et sauvegarder l'avis
         Review review = buildNewReview(request, userId, userName);
         Review savedReview = reviewRepository.save(review);
-
-        log.info("Avis cree avec succes: ID {}", savedReview.getId());
-
-        // Mettre a jour la note du restaurant
         updateRestaurantRating(request.getRestaurantId());
+        log.info("Avis crée avec succès: ID {}", savedReview.getId());
 
         return enrichReviewResponse(savedReview);
     }
@@ -83,10 +69,8 @@ public class ReviewServiceImpl implements ReviewService {
     @Override
     @Transactional(readOnly = true)
     public ReviewResponse getReviewById(Long id) {
-        log.debug("Recuperation de l'avis ID: {}", id);
-
+        log.debug("Récuperation de l'avis ID: {}", id);
         Review review = findReviewByIdOrThrow(id);
-
         return enrichReviewResponse(review);
     }
 
@@ -97,20 +81,14 @@ public class ReviewServiceImpl implements ReviewService {
 
         Review review = findReviewByIdOrThrow(id);
 
-        // Verifier les permissions
         if (!isAdmin(role) && !review.getUserId().equals(userId)) {
             throw new ForbiddenException("Vous ne pouvez modifier que vos propres avis");
         }
 
-        // Appliquer les modifications
         updateReviewFields(review, request);
-
         Review updatedReview = reviewRepository.save(review);
-
-        log.info("Avis ID: {} mis a jour", id);
-
-        // Mettre a jour la note du restaurant
         updateRestaurantRating(review.getRestaurantId());
+        log.info("Avis ID: {} mis à jour", id);
 
         return enrichReviewResponse(updatedReview);
     }
@@ -122,18 +100,14 @@ public class ReviewServiceImpl implements ReviewService {
 
         Review review = findReviewByIdOrThrow(id);
 
-        // Verifier les permissions
         if (!isAdmin(role) && !review.getUserId().equals(userId)) {
             throw new ForbiddenException("Vous ne pouvez supprimer que vos propres avis");
         }
 
         Long restaurantId = review.getRestaurantId();
         reviewRepository.delete(review);
-
-        log.info("Avis ID: {} supprime", id);
-
-        // Mettre a jour la note du restaurant
         updateRestaurantRating(restaurantId);
+        log.info("Avis ID: {} supprimé", id);
     }
 
     // RECHERCHE
@@ -141,8 +115,7 @@ public class ReviewServiceImpl implements ReviewService {
     @Override
     @Transactional(readOnly = true)
     public Page<ReviewResponse> getReviewsByRestaurant(Long restaurantId, Pageable pageable) {
-        log.debug("Recuperation des avis du restaurant ID: {}", restaurantId);
-
+        log.debug("Récuperation des avis du restaurant ID: {}", restaurantId);
         return reviewRepository.findByRestaurantIdAndIsVisibleTrueOrderByCreatedAtDesc(restaurantId, pageable)
                 .map(this::enrichReviewResponse);
     }
@@ -150,10 +123,8 @@ public class ReviewServiceImpl implements ReviewService {
     @Override
     @Transactional(readOnly = true)
     public Page<ReviewResponse> getAllReviewsByRestaurant(Long restaurantId, Long userId, String role, Pageable pageable) {
-        log.debug("Recuperation de tous les avis du restaurant ID: {}", restaurantId);
-
+        log.debug("Récuperation de tous les avis du restaurant ID: {}", restaurantId);
         checkRestaurantAccess(restaurantId, userId, role);
-
         return reviewRepository.findByRestaurantIdOrderByCreatedAtDesc(restaurantId, pageable)
                 .map(ReviewResponse::fromEntity);
     }
@@ -161,8 +132,7 @@ public class ReviewServiceImpl implements ReviewService {
     @Override
     @Transactional(readOnly = true)
     public Page<ReviewResponse> getReviewsByUser(Long userId, Pageable pageable) {
-        log.debug("Recuperation des avis de l'utilisateur ID: {}", userId);
-
+        log.debug("Récuperation des avis de l'utilisateur ID: {}", userId);
         return reviewRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable)
                 .map(this::enrichReviewResponse);
     }
@@ -170,8 +140,7 @@ public class ReviewServiceImpl implements ReviewService {
     @Override
     @Transactional(readOnly = true)
     public Page<ReviewResponse> getReviewsByRestaurantAndRating(Long restaurantId, Integer rating, Pageable pageable) {
-        log.debug("Recuperation des avis du restaurant ID: {} avec la note: {}", restaurantId, rating);
-
+        log.debug("Récuperation des avis du restaurant ID: {} avec la note: {}", restaurantId, rating);
         return reviewRepository.findByRestaurantIdAndRatingAndIsVisibleTrueOrderByCreatedAtDesc(restaurantId, rating, pageable)
                 .map(this::enrichReviewResponse);
     }
@@ -179,8 +148,7 @@ public class ReviewServiceImpl implements ReviewService {
     @Override
     @Transactional(readOnly = true)
     public Page<ReviewResponse> getVerifiedReviews(Long restaurantId, Pageable pageable) {
-        log.debug("Recuperation des avis verifies du restaurant ID: {}", restaurantId);
-
+        log.debug("Récuperation des avis vérifiés du restaurant ID: {}", restaurantId);
         return reviewRepository.findByRestaurantIdAndIsVerifiedTrueAndIsVisibleTrueOrderByCreatedAtDesc(restaurantId, pageable)
                 .map(this::enrichReviewResponse);
     }
@@ -188,8 +156,7 @@ public class ReviewServiceImpl implements ReviewService {
     @Override
     @Transactional(readOnly = true)
     public Page<ReviewResponse> searchReviews(Long restaurantId, String keyword, Pageable pageable) {
-        log.debug("Recherche d'avis pour le restaurant ID: {} avec le mot-cle: {}", restaurantId, keyword);
-
+        log.debug("Recherche d'avis pour le restaurant ID: {} avec le mot-clé: {}", restaurantId, keyword);
         return reviewRepository.searchByKeyword(restaurantId, keyword, pageable)
                 .map(this::enrichReviewResponse);
     }
@@ -209,7 +176,7 @@ public class ReviewServiceImpl implements ReviewService {
             ratingDistribution.put(i, 0L);
         }
 
-        // Remplir avec les donnees reelles
+        // Remplir avec les donnees réelles
         for (Object[] row : distribution) {
             Integer rating = (Integer) row[0];
             Long count = (Long) row[1];
@@ -229,18 +196,14 @@ public class ReviewServiceImpl implements ReviewService {
     @Override
     @Transactional
     public ReviewResponse addOwnerResponse(Long reviewId, OwnerResponseRequest request, Long userId, String role) {
-        log.info("Ajout d'une reponse proprietaire a l'avis ID: {} par l'utilisateur ID: {}", reviewId, userId);
+        log.info("Ajout d'une réponse propriétaire a l'avis ID: {} par l'utilisateur ID: {}", reviewId, userId);
 
         Review review = findReviewByIdOrThrow(reviewId);
         checkRestaurantAccess(review.getRestaurantId(), userId, role);
-
-        // Ajouter la reponse
         review.setOwnerResponse(request.getResponse());
         review.setOwnerResponseAt(LocalDateTime.now());
-
         Review savedReview = reviewRepository.save(review);
-
-        log.info("Reponse proprietaire ajoutee a l'avis ID: {}", reviewId);
+        log.info("Réponse propriétaire ajoutée a l'avis ID: {}", reviewId);
 
         return ReviewResponse.fromEntity(savedReview);
     }
@@ -248,18 +211,14 @@ public class ReviewServiceImpl implements ReviewService {
     @Override
     @Transactional
     public ReviewResponse deleteOwnerResponse(Long reviewId, Long userId, String role) {
-        log.info("Suppression de la reponse proprietaire de l'avis ID: {} par l'utilisateur ID: {}", reviewId, userId);
+        log.info("Suppression de la réponse propriétaire de l'avis ID: {} par l'utilisateur ID: {}", reviewId, userId);
 
         Review review = findReviewByIdOrThrow(reviewId);
         checkRestaurantAccess(review.getRestaurantId(), userId, role);
-
-        // Supprimer la reponse
         review.setOwnerResponse(null);
         review.setOwnerResponseAt(null);
-
         Review savedReview = reviewRepository.save(review);
-
-        log.info("Reponse proprietaire supprimee de l'avis ID: {}", reviewId);
+        log.info("Réponse propriétaire supprimée de l'avis ID: {}", reviewId);
 
         return ReviewResponse.fromEntity(savedReview);
     }
@@ -267,10 +226,8 @@ public class ReviewServiceImpl implements ReviewService {
     @Override
     @Transactional(readOnly = true)
     public List<ReviewResponse> getUnansweredReviews(Long restaurantId, Long userId, String role) {
-        log.debug("Recuperation des avis sans reponse pour le restaurant ID: {}", restaurantId);
-
+        log.debug("Récuperation des avis sans réponse pour le restaurant ID: {}", restaurantId);
         checkRestaurantAccess(restaurantId, userId, role);
-
         return reviewRepository.findByRestaurantIdAndOwnerResponseIsNullOrderByCreatedAtDesc(restaurantId)
                 .stream()
                 .map(ReviewResponse::fromEntity)
@@ -282,24 +239,18 @@ public class ReviewServiceImpl implements ReviewService {
     @Override
     @Transactional
     public ReviewResponse toggleVisibility(Long id, Long userId, String role) {
-        log.info("Modification de la visibilite de l'avis ID: {} par l'utilisateur ID: {}", id, userId);
+        log.info("Modification de la visibilité de l'avis ID: {} par l'utilisateur ID: {}", id, userId);
 
-        // Verifier les permissions admin
+        // Vérifier les permissions admin
         if (!isAdmin(role)) {
-            throw new ForbiddenException("Seuls les administrateurs peuvent modifier la visibilite des avis");
+            throw new ForbiddenException("Seuls les administrateurs peuvent modifier la visibilité des avis");
         }
 
         Review review = findReviewByIdOrThrow(id);
-
-        // Inverser la visibilite
         review.setIsVisible(!review.getIsVisible());
-
         Review updatedReview = reviewRepository.save(review);
-
-        log.info("Visibilite de l'avis ID: {} modifiee: {}", id, updatedReview.getIsVisible());
-
-        // Mettre a jour la note du restaurant
         updateRestaurantRating(review.getRestaurantId());
+        log.info("Visibilité de l'avis ID: {} modifiée: {}", id, updatedReview.getIsVisible());
 
         return ReviewResponse.fromEntity(updatedReview);
     }
@@ -309,8 +260,7 @@ public class ReviewServiceImpl implements ReviewService {
     @Override
     @Transactional(readOnly = true)
     public ReviewResponse getMyReviewForRestaurant(Long restaurantId, Long userId) {
-        log.debug("Recuperation de l'avis de l'utilisateur ID: {} pour le restaurant ID: {}", userId, restaurantId);
-
+        log.debug("Récuperation de l'avis de l'utilisateur ID: {} pour le restaurant ID: {}", userId, restaurantId);
         return reviewRepository.findByUserIdAndRestaurantId(userId, restaurantId)
                 .map(this::enrichReviewResponse)
                 .orElse(null);
@@ -318,48 +268,44 @@ public class ReviewServiceImpl implements ReviewService {
 
     @Override
     public boolean hasReviewedRestaurant(Long userId, Long restaurantId) {
-        log.debug("Verification si l'utilisateur ID: {} a deja evalue le restaurant ID: {}", userId, restaurantId);
-
+        log.debug("Vérification si l'utilisateur ID: {} a deja évalue le restaurant ID: {}", userId, restaurantId);
         return reviewRepository.existsByUserIdAndRestaurantId(userId, restaurantId);
     }
 
     @Override
     @Transactional(readOnly = true)
     public boolean canReviewRestaurant(Long userId, Long restaurantId) {
-        log.debug("Verification si l'utilisateur ID: {} peut evaluer le restaurant ID: {}", userId, restaurantId);
+        log.debug("Vérification si l'utilisateur ID: {} peut évaluer le restaurant ID: {}", userId, restaurantId);
 
-        // Ne peut pas evaluer si deja fait
+        // Ne peut pas évaluer si deja fait
         if (hasReviewedRestaurant(userId, restaurantId)) {
             return false;
         }
 
-        // Doit avoir une reservation terminee
+        // Doit avoir une reservation terminée
         return bookingServiceClient.hasCompletedBooking(userId, restaurantId);
     }
 
-    // METHODES PRIVEES
 
     /**
-     * Recherche un avis par ID ou leve une exception si non trouve.
-     * Methode privee pour eviter la duplication de code.
+     * Recherche un avis par ID ou lève une exception si non trouvé.
      *
      * @param id l'identifiant de l'avis
-     * @return l'avis trouve
+     * @return l'avis trouvé
      * @throws ResourceNotFoundException si l'avis n'existe pas
      */
     private Review findReviewByIdOrThrow(Long id) {
         return reviewRepository.findById(id)
                 .orElseThrow(() -> {
-                    log.debug("Avis non trouve avec l'ID: {}", id);
+                    log.debug("Avis non trouvé avec l'ID: {}", id);
                     return new ResourceNotFoundException("id", id);
                 });
     }
 
     /**
-     * Construit un nouvel avis a partir de la requete de creation.
-     * Methode privee pour ameliorer la lisibilite et la testabilite.
+     * Construit un nouvel avis à partir de la requête de creation.
      *
-     * @param request la requete de creation contenant les informations de l'avis
+     * @param request la requête de creation contenant les informations de l'avis
      * @param userId l'identifiant de l'utilisateur
      * @param userName le nom de l'utilisateur
      * @return le nouvel avis construit
@@ -378,30 +324,26 @@ public class ReviewServiceImpl implements ReviewService {
     }
 
     /**
-     * Met a jour les champs modifiables d'un avis.
-     * Methode privee pour factoriser la logique de mise a jour.
+     * Met à jour les champs modifiables d'un avis.
      *
-     * @param review l'avis a modifier
-     * @param request la requete de mise a jour contenant les nouveaux champs
+     * @param review l'avis à modifier
+     * @param request la requête de mise à jour contenant les nouveaux champs
      */
     private void updateReviewFields(Review review, UpdateReviewRequest request) {
-        // Mise a jour de la note si fournie
         if (request.getRating() != null) {
             validateRating(request.getRating());
             review.setRating(request.getRating());
         }
 
-        // Mise a jour du commentaire si fourni
         if (request.getComment() != null) {
             review.setComment(request.getComment());
         }
     }
 
     /**
-     * Valide qu'une note est dans la plage autorisee.
-     * Methode privee pour centraliser la validation.
+     * Valide qu'une note est dans la plage autorisée.
      *
-     * @param rating la note a valider
+     * @param rating la note à valider
      * @throws ReviewException si la note est invalide
      */
     private void validateRating(Integer rating) {
@@ -411,9 +353,8 @@ public class ReviewServiceImpl implements ReviewService {
     }
 
     /**
-     * Met a jour la note moyenne d'un restaurant.
-     * Recupere les statistiques et notifie le restaurant-service.
-     * Methode privee pour centraliser cette logique.
+     * Met à jour la note moyenne d'un restaurant.
+     * Récupère les statistiques et notifie le restaurant-service.
      *
      * @param restaurantId l'identifiant du restaurant
      */
@@ -423,47 +364,46 @@ public class ReviewServiceImpl implements ReviewService {
             double averageRating = stats[0] != null ? (Double) stats[0] : 0.0;
             Long totalReviews = stats[1] != null ? (Long) stats[1] : 0L;
 
-            // Arrondir a 1 decimale
+            // Arrondir à 1 décimale
             averageRating = Math.round(averageRating * 10.0) / 10.0;
 
             restaurantServiceClient.updateRestaurantRating(restaurantId, averageRating, totalReviews);
         } catch (Exception e) {
-            log.error("Erreur lors de la mise a jour de la note du restaurant ID: {}: {}",
+            log.error("Erreur lors de la mise à jour de la note du restaurant ID: {}: {}",
                     restaurantId, e.getMessage());
         }
     }
 
     /**
-     * Verifie que l'utilisateur a acces aux avis d'un restaurant.
-     * Seuls les proprietaires, staff et admin ont acces.
+     * Vérifie que l'utilisateur a accès aux avis d'un restaurant.
+     * Seuls les propriétaires, staff et admin ont accès.
      *
      * @param restaurantId l'identifiant du restaurant
      * @param userId l'identifiant de l'utilisateur
-     * @param role le role de l'utilisateur
-     * @throws ForbiddenException si l'utilisateur n'a pas acces
+     * @param role le rôle de l'utilisateur
+     * @throws ForbiddenException si l'utilisateur n'a pas accès
      */
     private void checkRestaurantAccess(Long restaurantId, Long userId, String role) {
-        // Staff et admin ont acces a tout
+        // Staff et admin ont accès à tout
         if (isStaffOrAdmin(role)) {
             return;
         }
 
         try {
-            RestaurantServiceClient.RestaurantInfo restaurant =
-                    restaurantServiceClient.getRestaurantInfo(restaurantId);
+            RestaurantServiceClient.RestaurantInfo restaurant = restaurantServiceClient.getRestaurantInfo(restaurantId);
 
             if (restaurant.getOwnerId() != null && restaurant.getOwnerId().equals(userId)) {
                 return;
             }
 
-            throw new ForbiddenException("Vous n'avez pas acces aux avis de ce restaurant");
+            throw new ForbiddenException("Vous n'avez pas accès aux avis de ce restaurant");
         } catch (ResourceNotFoundException | ForbiddenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Erreur lors de la verification des permissions pour le restaurant ID: {}: {}",
+            log.error("Erreur lors de la vérification des permissions pour le restaurant ID: {}: {}",
                     restaurantId, e.getMessage());
             throw new BusinessException(
-                    "Impossible de verifier les permissions. Veuillez reessayer.",
+                    "Impossible de vérifier les permissions. Veuillez réessayer.",
                     HttpStatus.SERVICE_UNAVAILABLE,
                     ExceptionConst.SERVICE_UNAVAILABLE
             );
@@ -471,36 +411,35 @@ public class ReviewServiceImpl implements ReviewService {
     }
 
     /**
-     * Verifie si un role correspond a admin.
+     * Vérifie si un rôle correspond à admin.
      *
-     * @param role le role a verifier
-     * @return true si le role est ADMIN
+     * @param role le rôle à vérifier
+     * @return true si le rôle est ADMIN
      */
     private boolean isAdmin(String role) {
         return "ROLE_ADMIN".equals(role);
     }
 
     /**
-     * Verifie si un role correspond a staff ou admin.
+     * Vérifie si un rôle correspond à staff ou admin.
      *
-     * @param role le role a verifier
-     * @return true si le role est STAFF ou ADMIN
+     * @param role le rôle à vérifier
+     * @return true si le rôle est STAFF ou ADMIN
      */
     private boolean isStaffOrAdmin(String role) {
         return "ROLE_ADMIN".equals(role) || "ROLE_STAFF".equals(role);
     }
 
     /**
-     * Enrichit une reponse d'avis avec le nom du restaurant.
-     * Si le restaurant service est indisponible, retourne la reponse simple.
+     * Enrichit une réponse d'avis avec le nom du restaurant.
+     * Si le restaurant service est indisponible, retourne la réponse simple.
      *
      * @param review l'avis
-     * @return la reponse enrichie ou simple
+     * @return la réponse enrichie ou simple
      */
     private ReviewResponse enrichReviewResponse(Review review) {
         try {
-            RestaurantServiceClient.RestaurantInfo restaurant =
-                    restaurantServiceClient.getRestaurantInfo(review.getRestaurantId());
+            RestaurantServiceClient.RestaurantInfo restaurant = restaurantServiceClient.getRestaurantInfo(review.getRestaurantId());
             return ReviewResponse.fromEntityWithRestaurantName(review, restaurant.getName());
         } catch (Exception _) {
             return ReviewResponse.fromEntity(review);
