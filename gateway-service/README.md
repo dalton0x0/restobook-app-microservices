@@ -143,10 +143,10 @@ Si plusieurs instances d'un service sont disponibles, le Gateway répartit autom
 
 ```bash
 # Copier le template
-cp .env.properties.example .env.properties
+cp .env.example .env
 
 # Modifier les valeurs
-nano .env.properties
+nano .env
 ```
 
 ### Variables d'environnement

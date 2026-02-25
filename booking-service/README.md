@@ -101,7 +101,7 @@ Ce microservice gère :
 ## Configuration
 
 ```bash
-cp .env.properties.example .env.properties
+cp .env.example .env
 ```
 
 ### Variables d'environnement
