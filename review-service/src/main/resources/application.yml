@@ -4,7 +4,7 @@
 spring:
   # Environnement Variables Configuration
   config:
-    import: optional:file:.env.properties
+    import: optional:file:.env[.properties]
 
   # Application Configuration
   application:

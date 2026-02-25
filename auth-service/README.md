@@ -95,10 +95,10 @@ Le service utilise la fonctionnalité native `spring.config.import` de Spring Bo
 
 ```bash
 # Copier le template
-cp .env.properties.example .env.properties
+cp .env.example .env
 
 # Modifier les valeurs selon votre environnement
-nano .env.properties
+nano .env
 ```
 
 > **Important** : Le fichier `.env.properties` doit être à la **racine du projet** (même niveau que `pom.xml`)
