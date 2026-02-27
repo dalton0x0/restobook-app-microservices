@@ -1,86 +1,14 @@
 # AUTH SERVICE
 
-# Server Configuration
-server:
-  port: ${AUTH_SERVICE_PORT:8081}
-
 # Spring Configuration
 spring:
-  # Environment Variables Configuration
-  config:
-    import: optional:file:.env[.properties]
-
-  # Application Configuration
   application:
     name: auth-service
 
-  # Database Configuration
-  datasource:
-    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:auth_db}?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC
-    username: ${DB_USERNAME:your_username}
-    password: ${DB_PASSWORD:your_secure_password}
-    driver-class-name: com.mysql.cj.jdbc.Driver
+  # Environment Variables Configuration
+  config:
+    import: optional:configserver:${CONFIG_SERVER_URL:http://localhost:8085}
 
-  # Hibernate Configuration
-  jpa:
-    hibernate:
-      ddl-auto: ${JPA_DDL_AUTO:update}
-    show-sql: ${JPA_SHOW_SQL:false}
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.MySQLDialect
-        format_sql: true
-    open-in-view: false
-
-  # Discovery Configuration
-  cloud:
-    discovery:
-      enabled: true
-
-# Eureka Configuration
-eureka:
-  client:
-    service-url:
-      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka}
-
-# JWT Configuration
-jwt:
-  secret: ${JWT_SECRET:VotreCleSecreteTresLongueEtComplexe}
-  access-token-expiration: ${JWT_ACCESS_EXPIRATION:900000}
-  refresh-token-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
-
-# Logging Configuration
-logging:
-  level:
-    root: ${LOG_LEVEL_ROOT:INFO}
-    com.restobook.authservice: ${LOG_LEVEL_APP:DEBUG}
-    org.springframework.security: ${LOG_LEVEL_SECURITY:DEBUG}
-    org.hibernate.SQL: ${LOG_LEVEL_SQL:DEBUG}
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
-  file:
-    name: ${LOG_FILE_PATH:logs/auth-service.log}
-
-# Token cleanup configuration
-token:
-  cleanup:
-    cron: ${TOKEN_CLEANUP_CRON:0 0 2 * * ?}
-
-# Actuator Configuration
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics
-      base-path: /actuator
-  endpoint:
-    health:
-      show-details: when_authorized
-
-# OpenAPI Configuration
-springdoc:
-  api-docs:
-    path: /api-docs
-  swagger-ui:
-    path: /swagger-ui.html
-    enabled: ${SWAGGER_ENABLED:true}
+  # Profile Configuration
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:}
