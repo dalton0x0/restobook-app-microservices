@@ -1,0 +1,35 @@
+# CONFIGURATION PARTAGÉE - PROFIL PROD
+
+# Spring Configuration
+spring:
+  # JPA Configuration
+  jpa:
+    show-sql: false
+    hibernate:
+      ddl-auto: validate
+
+# Logging Configuration
+logging:
+  level:
+    root: WARN
+    com.restobook: INFO
+    org.hibernate.SQL: WARN
+  file:
+    name: ${LOG_FILE_PATH:logs/${spring.application.name}.log}
+
+# Actuator Configuration
+management:
+  endpoint:
+    health:
+      show-details: when_authorized
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+# Swagger Configuration
+springdoc:
+  swagger-ui:
+    enabled: false
+  api-docs:
+    enabled: false

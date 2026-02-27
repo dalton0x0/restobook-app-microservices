@@ -1,0 +1,20 @@
+# GATEWAY SERVICE - Profil DEV
+
+# Spring
+spring:
+  cloud:
+    gateway:
+      server:
+        webflux:
+          # CORS
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                allowedOrigins: "http://localhost:3000,http://localhost:5173"
+                allow-credentials: true
+
+# Logging
+logging:
+  level:
+    com.restobook.gatewayservice: DEBUG
+    org.springframework.cloud.gateway: DEBUG

@@ -1,0 +1,6 @@
+# EUREKA SERVICE - Profil DEV
+
+# Logging
+logging:
+  level:
+    com.restobook.eurekaservice: DEBUG

@@ -1,0 +1,14 @@
+# RESTAURANT SERVICE - Profil DEV
+
+# Spring
+spring:
+  # Database
+  datasource:
+    url: jdbc:mysql://localhost:3306/restaurant_db_dev?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: root
+    password:
+
+# Logging
+logging:
+  level:
+    com.restobook.restaurantservice: DEBUG

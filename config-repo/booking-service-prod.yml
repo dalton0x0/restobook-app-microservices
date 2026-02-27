@@ -1,0 +1,19 @@
+# BOOKING SERVICE - Profil PROD
+
+# Spring
+spring:
+  # Database
+  datasource:
+    url: jdbc:mysql://${DB_HOST}:${DB_PORT:3306}/${DB_NAME:booking_db}?useSSL=true&serverTimezone=UTC
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+# Booking
+booking:
+  max-days-advance: 7
+  cancellation-hours: 2
+
+# Logging
+logging:
+  level:
+    com.restobook.bookingservice: INFO
