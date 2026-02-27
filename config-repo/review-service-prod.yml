@@ -1,0 +1,18 @@
+# REVIEW SERVICE - Profil PROD
+
+# Spring
+spring:
+  # Database
+  datasource:
+    url: jdbc:mysql://${DB_HOST}:${DB_PORT:3306}/${DB_NAME:review_db}?useSSL=true&serverTimezone=UTC
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+# Review
+review:
+  min-comment-length: 10
+
+# Logging
+logging:
+  level:
+    com.restobook.reviewservice: INFO

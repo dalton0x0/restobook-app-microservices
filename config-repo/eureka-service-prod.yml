@@ -1,0 +1,6 @@
+# EUREKA SERVICE - Profil PROD
+
+# Logging
+logging:
+  level:
+    com.restobook.eurekaservice: INFO

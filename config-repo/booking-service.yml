@@ -1,0 +1,50 @@
+# BOOKING SERVICE - Configuration de base
+
+# Server Configuration
+server:
+  port: ${BOOKING_SERVICE_PORT:8083}
+
+# Spring Configuration
+spring:
+  # Database Configuration
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:booking_db}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # JPA Configuration
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+
+# Services Configuration (appels inter-services)
+services:
+  auth-service:
+    url: ${AUTH_SERVICE_URL:http://localhost:8081}
+  restaurant-service:
+    url: ${RESTAURANT_SERVICE_URL:http://localhost:8082}
+
+# Booking Configuration
+booking:
+  duration-minutes: ${BOOKING_DURATION_MINUTES:90}
+  slot-interval-minutes: ${BOOKING_SLOT_INTERVAL_MINUTES:30}
+  max-party-size: ${BOOKING_MAX_PARTY_SIZE:8}
+  min-party-size: ${BOOKING_MIN_PARTY_SIZE:1}
+  max-days-advance: ${BOOKING_MAX_DAYS_ADVANCE:7}
+  cancellation-hours: ${BOOKING_CANCELLATION_HOURS:2}
+
+# Logging Configuration
+logging:
+  level:
+    com.restobook.bookingservice: DEBUG
+  file:
+    name: logs/booking-service.log
+
+# OpenAPI Configuration
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html

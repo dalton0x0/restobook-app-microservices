@@ -1,0 +1,42 @@
+# GATEWAY SERVICE - Configuration de base
+
+# Server Configuration
+server:
+  port: ${GATEWAY_SERVICE_PORT:8088}
+
+# Spring Configuration
+spring:
+  # Gateway Configuration
+  cloud:
+    gateway:
+      server:
+        webflux:
+          discovery:
+            locator:
+              enabled: true
+              lower-case-service-id: true
+
+          # CORS Configuration
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                allowedOrigins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
+                allowed-methods:
+                  - GET
+                  - POST
+                  - PUT
+                  - PATCH
+                  - DELETE
+                  - OPTIONS
+                allowed-headers: ${CORS_ALLOWED_HEADERS:*}
+                exposed-headers: ${CORS_EXPOSED_HEADERS:*}
+                allow-credentials: ${CORS_ALLOW_CREDENTIALS:true}
+                max-age: ${CORS_MAX_AGE:3600}
+
+# Logging Configuration
+logging:
+  level:
+    com.restobook.gatewayservice: DEBUG
+    org.springframework.cloud.gateway: INFO
+  file:
+    name: logs/gateway-service.log

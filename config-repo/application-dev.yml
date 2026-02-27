@@ -1,0 +1,31 @@
+# CONFIGURATION PARTAGÉE - PROFIL DEV
+
+# Spring Configuration
+spring:
+  # JPA Configuration
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+
+# Logging Configuration
+logging:
+  level:
+    root: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.orm.jdbc.bind: TRACE
+
+# Actuator Configuration
+management:
+  endpoint:
+    health:
+      show-details: always
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,env,configprops,beans
+
+# Swagger Configuration
+springdoc:
+  swagger-ui:
+    enabled: true

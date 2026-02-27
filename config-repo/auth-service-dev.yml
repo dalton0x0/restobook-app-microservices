@@ -1,0 +1,24 @@
+# AUTH SERVICE - Profil DEV
+
+# Spring
+spring:
+  # Database
+  datasource:
+    url: jdbc:mysql://localhost:3306/auth_db_dev?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC
+    username: root
+    password:
+
+# JWT
+jwt:
+  secret: hN5M8UxJn7fcFh5IdMHKmGz28Ta2fpXjtIAQxc1ihBLatOR5Uc3aoT0ij6usJTwdkwcQy7ojmttIrpCFYTPiSQ
+
+# Logging
+logging:
+  level:
+    com.restobook.authservice: DEBUG
+    org.springframework.security: DEBUG
+
+# Admin
+admin:
+  email: admin@example.com
+  password: Password123!
