@@ -8,6 +8,15 @@ spring:
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
 
+# URLs inter-services (réseau Docker)
+services:
+  auth-service:
+    url: ${AUTH_SERVICE_URL:http://auth-service:8081}
+  restaurant-service:
+    url: ${RESTAURANT_SERVICE_URL:http://restaurant-service:8082}
+  booking-service:
+    url: ${BOOKING_SERVICE_URL:http://booking-service:8083}
+
 # Review
 review:
   min-comment-length: 10

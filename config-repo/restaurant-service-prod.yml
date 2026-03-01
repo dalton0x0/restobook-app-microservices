@@ -8,6 +8,11 @@ spring:
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
 
+# URLs inter-services (réseau Docker)
+services:
+  auth-service:
+    url: ${AUTH_SERVICE_URL:http://auth-service:8081}
+
 # Logging
 logging:
   level:
