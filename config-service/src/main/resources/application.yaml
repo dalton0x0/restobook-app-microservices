@@ -34,7 +34,7 @@ spring:
         native:
           search-locations: ${CONFIG_REPO_PATH:classpath:/config-repo}
         health:
-          enabled: true
+          enabled: false
 
 # Eureka Configuration
 eureka:
