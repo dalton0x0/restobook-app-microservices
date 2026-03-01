@@ -1,0 +1,256 @@
+# RESTOBOOK - docker-compose.yml
+#
+# 1. cp .env.docker .env
+# 2. docker compose up --build
+
+services:
+  # INFRA
+  mysql:
+    image: mysql:8.4
+    container_name: restobook-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_APP_USER: ${MYSQL_APP_USER}
+      MYSQL_APP_PASSWORD: ${MYSQL_APP_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql/init.sh:/docker-entrypoint-initdb.d/init.sh
+    networks:
+      - restobook-network
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # SPRING CLOUD - CONFIG SERVER
+  config-service:
+    build:
+      context: ./config-service
+      dockerfile: Dockerfile
+    container_name: restobook-config
+    restart: unless-stopped
+    environment:
+      CONFIG_SERVICE_PORT: ${CONFIG_SERVICE_PORT:-8085}
+      SPRING_PROFILES_ACTIVE: native
+      CONFIG_REPO_PATH: ${CONFIG_REPO_PATH:-file:/config-repo}
+      EUREKA_SERVER_URL: ${EUREKA_SERVER_URL}
+      LOG_LEVEL_ROOT: INFO
+      LOG_LEVEL_APP: DEBUG
+    volumes:
+      - ./config-repo:/config-repo:ro
+    ports:
+      - "${CONFIG_SERVICE_PORT:-8085}:${CONFIG_SERVICE_PORT:-8085}"
+    networks:
+      - restobook-network
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -sf http://localhost:${CONFIG_SERVICE_PORT:-8085}/actuator/health | grep -q '\"status\":\"UP\"' || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 45s
+
+  # SPRING CLOUD - EUREKA (Service Discovery)
+  eureka-service:
+    build:
+      context: ./eureka-service
+      dockerfile: Dockerfile
+    container_name: restobook-eureka
+    restart: unless-stopped
+    environment:
+      CONFIG_SERVER_URL: ${CONFIG_SERVER_URL}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      EUREKA_SERVICE_PORT: ${EUREKA_SERVICE_PORT:-8761}
+    ports:
+      - "${EUREKA_SERVICE_PORT:-8761}:${EUREKA_SERVICE_PORT:-8761}"
+    depends_on:
+      config-service:
+        condition: service_healthy
+    networks:
+      - restobook-network
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -sf http://localhost:${EUREKA_SERVICE_PORT:-8761}/actuator/health | grep -q '\"status\":\"UP\"' || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 60s
+
+  # SPRING CLOUD - GATEWAY
+  gateway-service:
+    build:
+      context: ./gateway-service
+      dockerfile: Dockerfile
+    container_name: restobook-gateway
+    restart: unless-stopped
+    environment:
+      CONFIG_SERVER_URL: ${CONFIG_SERVER_URL}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      EUREKA_SERVER_URL: ${EUREKA_SERVER_URL}
+      GATEWAY_SERVICE_PORT: ${GATEWAY_SERVICE_PORT:-8088}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
+    ports:
+      - "${GATEWAY_SERVICE_PORT:-8088}:${GATEWAY_SERVICE_PORT:-8088}"
+    depends_on:
+      eureka-service:
+        condition: service_healthy
+    networks:
+      - restobook-network
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -sf http://localhost:${GATEWAY_SERVICE_PORT:-8088}/actuator/health | grep -q '\"status\":\"UP\"' || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+  # SERVICE - AUTH
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    container_name: restobook-auth
+    restart: unless-stopped
+    environment:
+      CONFIG_SERVER_URL: ${CONFIG_SERVER_URL}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      EUREKA_SERVER_URL: ${EUREKA_SERVER_URL}
+      AUTH_SERVICE_PORT: ${AUTH_SERVICE_PORT:-8081}
+      # Base de données
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT:-3306}
+      DB_NAME: auth_db
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      SPRING_DATASOURCE_URL: "jdbc:mysql://${DB_HOST}:${DB_PORT:-3306}/auth_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+      # JWT & Admin
+      JWT_SECRET: ${JWT_SECRET}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-service:
+        condition: service_healthy
+    networks:
+      - restobook-network
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -sf http://localhost:${AUTH_SERVICE_PORT:-8081}/actuator/health | grep -q '\"status\":\"UP\"' || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 90s
+
+  # SERVICE - RESTAURANT
+  restaurant-service:
+    build:
+      context: ./restaurant-service
+      dockerfile: Dockerfile
+    container_name: restobook-restaurant
+    restart: unless-stopped
+    environment:
+      CONFIG_SERVER_URL: ${CONFIG_SERVER_URL}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      EUREKA_SERVER_URL: ${EUREKA_SERVER_URL}
+      RESTAURANT_SERVICE_PORT: ${RESTAURANT_SERVICE_PORT:-8082}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT:-3306}
+      DB_NAME: restaurant_db
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      SPRING_DATASOURCE_URL: "jdbc:mysql://${DB_HOST}:${DB_PORT:-3306}/restaurant_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+      # URL inter-services
+      AUTH_SERVICE_URL: ${AUTH_SERVICE_URL:-http://auth-service:8081}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-service:
+        condition: service_healthy
+    networks:
+      - restobook-network
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -sf http://localhost:${RESTAURANT_SERVICE_PORT:-8082}/actuator/health | grep -q '\"status\":\"UP\"' || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 90s
+
+  # SERVICE - BOOKING
+  booking-service:
+    build:
+      context: ./booking-service
+      dockerfile: Dockerfile
+    container_name: restobook-booking
+    restart: unless-stopped
+    environment:
+      CONFIG_SERVER_URL: ${CONFIG_SERVER_URL}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      EUREKA_SERVER_URL: ${EUREKA_SERVER_URL}
+      BOOKING_SERVICE_PORT: ${BOOKING_SERVICE_PORT:-8083}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT:-3306}
+      DB_NAME: booking_db
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      SPRING_DATASOURCE_URL: "jdbc:mysql://${DB_HOST}:${DB_PORT:-3306}/booking_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+      # URLs inter-services
+      AUTH_SERVICE_URL: ${AUTH_SERVICE_URL:-http://auth-service:8081}
+      RESTAURANT_SERVICE_URL: ${RESTAURANT_SERVICE_URL:-http://restaurant-service:8082}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-service:
+        condition: service_healthy
+    networks:
+      - restobook-network
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -sf http://localhost:${BOOKING_SERVICE_PORT:-8083}/actuator/health | grep -q '\"status\":\"UP\"' || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 90s
+
+  # SERVICE - REVIEW
+  review-service:
+    build:
+      context: ./review-service
+      dockerfile: Dockerfile
+    container_name: restobook-review
+    restart: unless-stopped
+    environment:
+      CONFIG_SERVER_URL: ${CONFIG_SERVER_URL}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      EUREKA_SERVER_URL: ${EUREKA_SERVER_URL}
+      REVIEW_SERVICE_PORT: ${REVIEW_SERVICE_PORT:-8084}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT:-3306}
+      DB_NAME: review_db
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      SPRING_DATASOURCE_URL: "jdbc:mysql://${DB_HOST}:${DB_PORT:-3306}/review_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+      # URLs inter-services
+      AUTH_SERVICE_URL: ${AUTH_SERVICE_URL:-http://auth-service:8081}
+      RESTAURANT_SERVICE_URL: ${RESTAURANT_SERVICE_URL:-http://restaurant-service:8082}
+      BOOKING_SERVICE_URL: ${BOOKING_SERVICE_URL:-http://booking-service:8083}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-service:
+        condition: service_healthy
+    networks:
+      - restobook-network
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -sf http://localhost:${REVIEW_SERVICE_PORT:-8084}/actuator/health | grep -q '\"status\":\"UP\"' || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 90s
+
+# VOLUMES
+volumes:
+  mysql_data:
+
+# RÉSEAUX
+networks:
+  restobook-network:
+    driver: bridge
